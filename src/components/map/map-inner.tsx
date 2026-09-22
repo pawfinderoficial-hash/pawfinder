@@ -1,7 +1,13 @@
 "use client";
 
-import { useEffect } from "react";
-import { MapContainer, TileLayer, Marker, useMapEvents } from "react-leaflet";
+import { useEffect, useState } from "react";
+import {
+  MapContainer,
+  TileLayer,
+  Marker,
+  useMap,
+  useMapEvents,
+} from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import type { PetPost } from "@/types/pet";
@@ -43,6 +49,24 @@ function ClickPicker({
   return null;
 }
 
+/** Moves the map when a target center becomes available (e.g. geolocation). */
+function MapController({
+  target,
+  zoom,
+}: {
+  target: { lat: number; lng: number } | null;
+  zoom: number;
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    if (!target) return;
+    map.flyTo([target.lat, target.lng], zoom, { duration: 0.75 });
+  }, [map, target, zoom]);
+
+  return null;
+}
+
 interface PetMapProps {
   posts: PetPost[];
   heightClass?: string;
@@ -51,6 +75,7 @@ interface PetMapProps {
   onPickLocation?: (lat: number, lng: number) => void;
   onMarkerClick?: (post: PetPost) => void;
   fullBleed?: boolean;
+  /** Explicit center skips geolocation (picker / publish flows). */
   center?: { lat: number; lng: number };
   zoom?: number;
 }
@@ -73,9 +98,16 @@ export function PetMapInner({
   onPickLocation,
   onMarkerClick,
   fullBleed = false,
-  center = MAP_DEFAULT_CENTER,
+  center,
   zoom = 13,
 }: PetMapProps) {
+  const followUser = !pickerMode && center === undefined;
+  const initialCenter = center ?? MAP_DEFAULT_CENTER;
+  const [userCenter, setUserCenter] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
+
   useEffect(() => {
     delete (L.Icon.Default.prototype as unknown as { _getIconUrl?: unknown })
       ._getIconUrl;
@@ -89,6 +121,30 @@ export function PetMapInner({
     });
   }, []);
 
+  useEffect(() => {
+    if (!followUser) return;
+    if (typeof navigator === "undefined" || !navigator.geolocation) return;
+
+    let cancelled = false;
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        if (cancelled) return;
+        setUserCenter({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        });
+      },
+      () => {
+        // Denied / unavailable / timeout — keep MAP_DEFAULT_CENTER (Palermo).
+      },
+      { enableHighAccuracy: false, timeout: 10_000, maximumAge: 60_000 },
+    );
+
+    return () => {
+      cancelled = true;
+    };
+  }, [followUser]);
+
   return (
     <div
       className={cn(
@@ -98,7 +154,7 @@ export function PetMapInner({
       )}
     >
       <MapContainer
-        center={[center.lat, center.lng]}
+        center={[initialCenter.lat, initialCenter.lng]}
         zoom={zoom}
         className="!h-full !min-h-[240px] w-full"
         style={{ height: "100%", minHeight: 240 }}
@@ -108,6 +164,7 @@ export function PetMapInner({
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
+        {followUser ? <MapController target={userCenter} zoom={zoom} /> : null}
         {pickerMode && onPickLocation ? (
           <ClickPicker onPick={onPickLocation} />
         ) : null}
