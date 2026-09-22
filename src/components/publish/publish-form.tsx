@@ -10,7 +10,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { PetMap } from "@/components/map/pet-map";
 import { usePawFinder } from "@/context/pawfinder-context";
-import { MAP_DEFAULT_CENTER } from "@/lib/mock-pets";
 import type { PetKind, PublishDraft } from "@/types/pet";
 
 const DEFAULT_IMAGES: Record<PetKind, string> = {
@@ -237,7 +236,6 @@ export function PublishForm({ kind }: { kind: PetKind }) {
           pickerMode
           pickerPosition={position}
           onPickLocation={(lat, lng) => setPosition({ lat, lng })}
-          center={MAP_DEFAULT_CENTER}
           heightClass="h-56"
         />
         {position ? (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   MapContainer,
   TileLayer,
@@ -75,7 +75,7 @@ interface PetMapProps {
   onPickLocation?: (lat: number, lng: number) => void;
   onMarkerClick?: (post: PetPost) => void;
   fullBleed?: boolean;
-  /** Explicit center skips geolocation (picker / publish flows). */
+  /** Explicit center skips browse-map geolocation. Picker still geolocates. */
   center?: { lat: number; lng: number };
   zoom?: number;
 }
@@ -101,12 +101,18 @@ export function PetMapInner({
   center,
   zoom = 13,
 }: PetMapProps) {
+  // Browse map: geolocate only when no explicit center. Publish picker: always try.
   const followUser = !pickerMode && center === undefined;
+  const geolocate = followUser || Boolean(pickerMode);
   const initialCenter = center ?? MAP_DEFAULT_CENTER;
   const [userCenter, setUserCenter] = useState<{
     lat: number;
     lng: number;
   } | null>(null);
+  const pickerPositionRef = useRef(pickerPosition);
+  const onPickLocationRef = useRef(onPickLocation);
+  pickerPositionRef.current = pickerPosition;
+  onPickLocationRef.current = onPickLocation;
 
   useEffect(() => {
     delete (L.Icon.Default.prototype as unknown as { _getIconUrl?: unknown })
@@ -122,17 +128,20 @@ export function PetMapInner({
   }, []);
 
   useEffect(() => {
-    if (!followUser) return;
+    if (!geolocate) return;
     if (typeof navigator === "undefined" || !navigator.geolocation) return;
 
     let cancelled = false;
     navigator.geolocation.getCurrentPosition(
       (position) => {
         if (cancelled) return;
-        setUserCenter({
-          lat: position.coords.latitude,
-          lng: position.coords.longitude,
-        });
+        const lat = position.coords.latitude;
+        const lng = position.coords.longitude;
+        setUserCenter({ lat, lng });
+        // Seed picker at user location only if they have not tapped yet.
+        if (pickerMode && !pickerPositionRef.current) {
+          onPickLocationRef.current?.(lat, lng);
+        }
       },
       () => {
         // Denied / unavailable / timeout — keep MAP_DEFAULT_CENTER (Palermo).
@@ -143,7 +152,7 @@ export function PetMapInner({
     return () => {
       cancelled = true;
     };
-  }, [followUser]);
+  }, [geolocate, pickerMode]);
 
   return (
     <div
@@ -164,7 +173,7 @@ export function PetMapInner({
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        {followUser ? <MapController target={userCenter} zoom={zoom} /> : null}
+        {geolocate ? <MapController target={userCenter} zoom={zoom} /> : null}
         {pickerMode && onPickLocation ? (
           <ClickPicker onPick={onPickLocation} />
         ) : null}
