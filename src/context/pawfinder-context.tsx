@@ -4,21 +4,14 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
-  useSyncExternalStore,
   type ReactNode,
 } from "react";
-import { DEMO_PENDING_MATCH, INITIAL_FEED } from "@/lib/mock-pets";
-import {
-  MOCK_NOTIFICATIONS,
-  type AppNotification,
-} from "@/lib/mock-notifications";
-import {
-  MOCK_MEETING_POINTS,
-  type MeetingPoint,
-} from "@/lib/mock-meeting-points";
-import { INITIAL_OWNED_REPORTS } from "@/lib/mock-owned-reports";
+import { useSession } from "next-auth/react";
+import type { AppNotification } from "@/lib/mock-notifications";
+import { MOCK_MEETING_POINTS, type MeetingPoint } from "@/lib/mock-meeting-points";
 import type {
   OwnedReport,
   PendingMatch,
@@ -27,30 +20,6 @@ import type {
   ReportStatus,
 } from "@/types/pet";
 import type { FeedViewMode } from "@/components/feed/feed-view-toggle";
-
-const USER_NAME_KEY = "pawfinder-demo-user";
-
-const userNameListeners = new Set<() => void>();
-
-function readStoredUserName(): string | null {
-  if (typeof window === "undefined") return null;
-  try {
-    return sessionStorage.getItem(USER_NAME_KEY);
-  } catch {
-    return null;
-  }
-}
-
-function subscribeUserName(onChange: () => void) {
-  userNameListeners.add(onChange);
-  return () => {
-    userNameListeners.delete(onChange);
-  };
-}
-
-function notifyUserNameChange() {
-  userNameListeners.forEach((listener) => listener());
-}
 
 export type EncounterResult =
   | { mode: "home" }
@@ -62,31 +31,32 @@ interface PawFinderContextValue {
   feedSearchQuery: string;
   setFeedSearchQuery: (query: string) => void;
   userName: string | null;
-  enterApp: (name?: string) => void;
+  isLoading: boolean;
+  refreshAll: () => Promise<void>;
   feedStack: PetPost[];
   allPosts: PetPost[];
   swipeCard: (direction: "left" | "right", postId: string) => void;
   resetFeed: () => void;
-  publishPost: (draft: PublishDraft) => void;
+  publishPost: (draft: PublishDraft & { cloudinaryPublicId?: string }) => Promise<void>;
   ownedReports: OwnedReport[];
-  updateReportStatus: (reportId: string, status: ReportStatus) => void;
+  updateReportStatus: (reportId: string, status: ReportStatus) => Promise<void>;
   updateOwnedReport: (
     reportId: string,
     changes: Pick<OwnedReport, "name" | "description" | "locationLabel">,
-  ) => void;
+  ) => Promise<void>;
   pendingMatch: PendingMatch | null;
   restoreDemoMatch: () => void;
-  beginEncounterAfterConfirm: () => void;
-  rejectMatch: () => void;
+  beginEncounterAfterConfirm: () => Promise<void>;
+  rejectMatch: () => Promise<void>;
   encounterMatch: PendingMatch | null;
   encounterResult: EncounterResult | null;
-  completeEncounterAtHome: () => void;
-  completeEncounterAtPoint: (pointId: string) => void;
+  completeEncounterAtHome: () => Promise<void>;
+  completeEncounterAtPoint: (pointId: string) => Promise<void>;
   clearEncounterFlow: () => void;
   notifications: AppNotification[];
   unreadNotificationCount: number;
-  markNotificationRead: (id: string) => void;
-  clearAllNotifications: () => void;
+  markNotificationRead: (id: string) => Promise<void>;
+  clearAllNotifications: () => Promise<void>;
   resetNotificationsDemo: () => void;
   lastPublishSuccess: boolean;
   clearPublishSuccess: () => void;
@@ -94,200 +64,233 @@ interface PawFinderContextValue {
 
 const PawFinderContext = createContext<PawFinderContextValue | null>(null);
 
-function draftToPost(draft: PublishDraft): PetPost {
-  return {
-    id: `user-${Date.now()}`,
-    kind: draft.kind,
-    name: draft.name || (draft.kind === "found" ? "Sin nombre" : "Mascota"),
-    species: draft.species,
-    breed: draft.breed || undefined,
-    description: draft.description,
-    locationLabel: draft.locationLabel,
-    lat: draft.lat,
-    lng: draft.lng,
-    imageUrl: draft.imageUrl,
-    contactName: draft.contactName,
-    contactPhone: draft.contactPhone,
-    contactEmail: draft.contactEmail || undefined,
-    reportedAt: new Date().toISOString().slice(0, 10),
-  };
+async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(url, init);
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || "Error de red");
+  }
+  return res.json() as Promise<T>;
 }
 
 export function PawFinderProvider({ children }: { children: ReactNode }) {
-  const userName = useSyncExternalStore(
-    subscribeUserName,
-    readStoredUserName,
-    () => null,
-  );
-  const [allPosts, setAllPosts] = useState<PetPost[]>(INITIAL_FEED);
-  const [feedStack, setFeedStack] = useState<PetPost[]>(INITIAL_FEED);
-  const [ownedReports, setOwnedReports] = useState<OwnedReport[]>(
-    INITIAL_OWNED_REPORTS,
-  );
-  const [pendingMatch, setPendingMatch] = useState<PendingMatch | null>(
-    DEMO_PENDING_MATCH,
-  );
-  const [encounterMatch, setEncounterMatch] = useState<PendingMatch | null>(
-    null,
-  );
+  const { data: session, status } = useSession();
+  const userName = session?.user?.name ?? session?.user?.email ?? null;
+
+  const [allPosts, setAllPosts] = useState<PetPost[]>([]);
+  const [feedStack, setFeedStack] = useState<PetPost[]>([]);
+  const [ownedReports, setOwnedReports] = useState<OwnedReport[]>([]);
+  const [pendingMatch, setPendingMatch] = useState<PendingMatch | null>(null);
+  const [encounterMatch, setEncounterMatch] = useState<PendingMatch | null>(null);
   const [encounterResult, setEncounterResult] = useState<EncounterResult | null>(
     null,
   );
-  const [notifications, setNotifications] =
-    useState<AppNotification[]>(MOCK_NOTIFICATIONS);
+  const [notifications, setNotifications] = useState<AppNotification[]>([]);
   const [lastPublishSuccess, setLastPublishSuccess] = useState(false);
   const [feedViewMode, setFeedViewMode] = useState<FeedViewMode>("swipe");
   const [feedSearchQuery, setFeedSearchQuery] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const enterApp = useCallback((name?: string) => {
-    const display = name?.trim() || "Vecino/a";
+  const refreshAll = useCallback(async () => {
+    if (status !== "authenticated") return;
+    setIsLoading(true);
     try {
-      sessionStorage.setItem(USER_NAME_KEY, display);
-    } catch {
-      /* ignore */
+      const [postsRes, mineRes, pendingRes, encounterRes, notifRes] =
+        await Promise.all([
+          fetchJson<{ posts: PetPost[] }>("/api/posts"),
+          fetchJson<{ reports: OwnedReport[] }>("/api/posts/mine"),
+          fetchJson<{ pendingMatch: PendingMatch | null }>(
+            "/api/matches/pending",
+          ),
+          fetchJson<{ encounterMatch: PendingMatch | null }>(
+            "/api/matches/encounter",
+          ),
+          fetchJson<{ notifications: AppNotification[] }>(
+            "/api/notifications",
+          ),
+        ]);
+      setAllPosts(postsRes.posts);
+      setFeedStack(postsRes.posts);
+      setOwnedReports(mineRes.reports);
+      setPendingMatch(pendingRes.pendingMatch);
+      setEncounterMatch(encounterRes.encounterMatch);
+      setNotifications(notifRes.notifications);
+    } finally {
+      setIsLoading(false);
     }
-    notifyUserNameChange();
-  }, []);
+  }, [status]);
+
+  useEffect(() => {
+    if (status === "authenticated") {
+      void refreshAll();
+    }
+    if (status === "unauthenticated") {
+      setAllPosts([]);
+      setFeedStack([]);
+      setOwnedReports([]);
+      setPendingMatch(null);
+      setEncounterMatch(null);
+      setNotifications([]);
+    }
+  }, [status, refreshAll]);
 
   const swipeCard = useCallback(
-    (direction: "left" | "right", postId: string) => {
+    async (direction: "left" | "right", postId: string) => {
       setFeedStack((prev) => prev.filter((p) => p.id !== postId));
       if (direction === "right") {
-        const post = allPosts.find((p) => p.id === postId);
-        if (post?.kind === "found" && post.name.toLowerCase().includes("luna")) {
-          setPendingMatch(DEMO_PENDING_MATCH);
+        try {
+          await fetchJson("/api/matches", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ targetPostId: postId }),
+          });
+          await refreshAll();
+        } catch {
+          /* usuario puede no tener aviso complementario */
         }
       }
     },
-    [allPosts],
+    [refreshAll],
   );
 
   const resetFeed = useCallback(() => {
     setFeedStack(allPosts);
   }, [allPosts]);
 
-  const publishPost = useCallback((draft: PublishDraft) => {
-    const post = draftToPost(draft);
-    setAllPosts((prev) => [post, ...prev]);
-    setFeedStack((prev) => [post, ...prev]);
-    setOwnedReports((prev) => [
-      {
-        ...post,
-        status: "active",
-        candidateCount: 0,
-        views: 0,
-        updatedAt: "Recien publicado",
-      },
-      ...prev,
-    ]);
-    setLastPublishSuccess(true);
-  }, []);
+  const publishPost = useCallback(
+    async (draft: PublishDraft & { cloudinaryPublicId?: string }) => {
+      await fetchJson("/api/posts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(draft),
+      });
+      setLastPublishSuccess(true);
+      await refreshAll();
+    },
+    [refreshAll],
+  );
 
   const updateReportStatus = useCallback(
-    (reportId: string, status: ReportStatus) => {
-      setOwnedReports((prev) =>
-        prev.map((report) =>
-          report.id === reportId
-            ? { ...report, status, updatedAt: "Actualizado recien" }
-            : report,
-        ),
-      );
-
-      if (status === "active") {
-        const report = ownedReports.find((item) => item.id === reportId);
-        if (report) {
-          setAllPosts((prev) =>
-            prev.some((post) => post.id === reportId)
-              ? prev
-              : [report, ...prev],
-          );
-          setFeedStack((prev) =>
-            prev.some((post) => post.id === reportId)
-              ? prev
-              : [report, ...prev],
-          );
-        }
-        return;
-      }
-
-      setAllPosts((prev) => prev.filter((post) => post.id !== reportId));
-      setFeedStack((prev) => prev.filter((post) => post.id !== reportId));
+    async (reportId: string, statusValue: ReportStatus) => {
+      await fetchJson(`/api/posts/${reportId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: statusValue }),
+      });
+      await refreshAll();
     },
-    [ownedReports],
+    [refreshAll],
   );
 
   const updateOwnedReport = useCallback(
-    (
+    async (
       reportId: string,
       changes: Pick<OwnedReport, "name" | "description" | "locationLabel">,
     ) => {
-      setOwnedReports((prev) =>
-        prev.map((report) =>
-          report.id === reportId
-            ? { ...report, ...changes, updatedAt: "Editado recien" }
-            : report,
-        ),
-      );
-      setAllPosts((prev) =>
-        prev.map((post) =>
-          post.id === reportId ? { ...post, ...changes } : post,
-        ),
-      );
-      setFeedStack((prev) =>
-        prev.map((post) =>
-          post.id === reportId ? { ...post, ...changes } : post,
-        ),
-      );
+      await fetchJson(`/api/posts/${reportId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(changes),
+      });
+      await refreshAll();
     },
-    [],
+    [refreshAll],
   );
 
   const restoreDemoMatch = useCallback(() => {
-    setPendingMatch(DEMO_PENDING_MATCH);
-    setEncounterMatch(null);
-    setEncounterResult(null);
+    /* v1 real: sin demo match */
   }, []);
 
-  const beginEncounterAfterConfirm = useCallback(() => {
+  const beginEncounterAfterConfirm = useCallback(async () => {
     if (!pendingMatch) return;
+    await fetchJson(`/api/matches/${pendingMatch.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "confirm" }),
+    });
     setEncounterMatch(pendingMatch);
     setEncounterResult(null);
     setPendingMatch(null);
-  }, [pendingMatch]);
+    await refreshAll();
+  }, [pendingMatch, refreshAll]);
 
-  const rejectMatch = useCallback(() => {
+  const rejectMatch = useCallback(async () => {
+    if (!pendingMatch) return;
+    await fetchJson(`/api/matches/${pendingMatch.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "reject" }),
+    });
     setPendingMatch(null);
-  }, []);
+    await refreshAll();
+  }, [pendingMatch, refreshAll]);
 
-  const completeEncounterAtHome = useCallback(() => {
+  const completeEncounterAtHome = useCallback(async () => {
+    if (!encounterMatch) return;
+    await fetchJson(`/api/matches/${encounterMatch.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "encounter", meetingMode: "home" }),
+    });
     setEncounterResult({ mode: "home" });
-  }, []);
+    await refreshAll();
+  }, [encounterMatch, refreshAll]);
 
-  const completeEncounterAtPoint = useCallback((pointId: string) => {
-    const point = MOCK_MEETING_POINTS.find((p) => p.id === pointId);
-    if (point) {
-      setEncounterResult({ mode: "point", point });
-    }
-  }, []);
+  const completeEncounterAtPoint = useCallback(
+    async (pointId: string) => {
+      if (!encounterMatch) return;
+      const point = MOCK_MEETING_POINTS.find((p) => p.id === pointId);
+      await fetchJson(`/api/matches/${encounterMatch.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "encounter",
+          meetingMode: "point",
+          meetingPointId: pointId,
+        }),
+      });
+      if (point) {
+        setEncounterResult({ mode: "point", point });
+      }
+      await refreshAll();
+    },
+    [encounterMatch, refreshAll],
+  );
 
   const clearEncounterFlow = useCallback(() => {
     setEncounterMatch(null);
     setEncounterResult(null);
   }, []);
 
-  const markNotificationRead = useCallback((id: string) => {
+  const markNotificationRead = useCallback(async (id: string) => {
+    if (id.startsWith("sponsor-")) {
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
+      );
+      return;
+    }
+    await fetchJson("/api/notifications", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    });
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, read: true } : n)),
     );
   }, []);
 
-  const clearAllNotifications = useCallback(() => {
-    setNotifications([]);
+  const clearAllNotifications = useCallback(async () => {
+    await fetchJson("/api/notifications", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ clearAll: true }),
+    });
+    setNotifications((prev) => prev.filter((n) => n.id.startsWith("sponsor-")));
   }, []);
 
   const resetNotificationsDemo = useCallback(() => {
-    setNotifications(MOCK_NOTIFICATIONS);
-  }, []);
+    void refreshAll();
+  }, [refreshAll]);
 
   const unreadNotificationCount = useMemo(
     () => notifications.filter((n) => !n.read).length,
@@ -301,7 +304,8 @@ export function PawFinderProvider({ children }: { children: ReactNode }) {
   const value = useMemo(
     () => ({
       userName,
-      enterApp,
+      isLoading,
+      refreshAll,
       feedViewMode,
       setFeedViewMode,
       feedSearchQuery,
@@ -333,7 +337,8 @@ export function PawFinderProvider({ children }: { children: ReactNode }) {
     }),
     [
       userName,
-      enterApp,
+      isLoading,
+      refreshAll,
       feedViewMode,
       feedSearchQuery,
       feedStack,

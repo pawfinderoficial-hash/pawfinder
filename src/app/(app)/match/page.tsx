@@ -11,7 +11,6 @@ import {
   HeartHandshake,
   LockKeyhole,
   PartyPopper,
-  RotateCcw,
 } from "lucide-react";
 
 export default function MatchPage() {
@@ -20,7 +19,6 @@ export default function MatchPage() {
     pendingMatch,
     beginEncounterAfterConfirm,
     rejectMatch,
-    restoreDemoMatch,
   } = usePawFinder();
 
   const handleConfirm = () => {
@@ -45,17 +43,9 @@ export default function MatchPage() {
             Cuando alguien crea que encontró a tu mascota, vas a poder confirmar
             o rechazar acá.
           </p>
-          <Button
-            variant="outline"
-            className="mt-6"
-            onClick={restoreDemoMatch}
-          >
-            <RotateCcw className="size-4" />
-            Simular match de demo
-          </Button>
           <Link
             href="/feed"
-            className="mt-2 text-sm font-medium text-primary underline-offset-4 hover:underline"
+            className="mt-6 text-sm font-medium text-primary underline-offset-4 hover:underline"
           >
             Volver al feed
           </Link>

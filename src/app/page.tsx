@@ -1,8 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { signIn, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { PawPrint, Heart, Shield } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 
 function GoogleMark({ className }: { className?: string }) {
   return (
@@ -31,28 +34,21 @@ function GoogleMark({ className }: { className?: string }) {
     </svg>
   );
 }
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent } from "@/components/ui/card";
-import { usePawFinder } from "@/context/pawfinder-context";
 
-function LoginContent() {
+export default function HomePage() {
   const router = useRouter();
-  const { enterApp } = usePawFinder();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [name, setName] = useState("");
+  const { status } = useSession();
+  const [loading, setLoading] = useState(false);
 
-  const goFeed = (displayName?: string) => {
-    enterApp(displayName || email.split("@")[0] || "Vecino/a");
-    router.push("/feed");
-  };
+  if (status === "authenticated") {
+    router.replace("/feed");
+    return null;
+  }
 
-  const continueWithGoogle = () => {
-    enterApp("María");
-    router.push("/feed");
+  const continueWithGoogle = async () => {
+    setLoading(true);
+    await signIn("google", { callbackUrl: "/feed" });
+    setLoading(false);
   };
 
   return (
@@ -74,114 +70,24 @@ function LoginContent() {
           </p>
         </div>
 
-        <div className="space-y-2">
-          <Button
-            type="button"
-            variant="outline"
-            size="lg"
-            className="h-12 w-full gap-3 rounded-xl border-border/80 bg-white text-[0.95rem] font-semibold text-foreground shadow-sm hover:bg-white/95 dark:bg-card"
-            onClick={continueWithGoogle}
-          >
-            <GoogleMark className="size-5 shrink-0" />
-            Continuar con Google
-          </Button>
-          <p className="text-center text-[0.7rem] leading-snug text-muted-foreground">
-            En la versión final inicia sesión con tu cuenta Google.
-          </p>
-        </div>
-
-        <p className="my-5 text-center text-xs font-medium uppercase tracking-wide text-muted-foreground/80">
-          O con email (demo visual)
-        </p>
-
-        <Card className="pf-surface-soft border border-border/40 shadow-none opacity-[0.97]">
-          <CardContent className="pt-5">
-            <Tabs defaultValue="login" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="login">Iniciar sesión</TabsTrigger>
-                <TabsTrigger value="register">Registrarse</TabsTrigger>
-              </TabsList>
-              <TabsContent value="login" className="mt-4 space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="login-email">Email</Label>
-                  <Input
-                    id="login-email"
-                    type="email"
-                    placeholder="vos@ejemplo.com.ar"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    autoComplete="email"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="login-pass">Contraseña</Label>
-                  <Input
-                    id="login-pass"
-                    type="password"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    autoComplete="current-password"
-                  />
-                </div>
-                <Button
-                  className="pf-btn-emphasis w-full rounded-xl shadow-none"
-                  size="lg"
-                  onClick={() => goFeed()}
-                >
-                  Continuar
-                </Button>
-              </TabsContent>
-              <TabsContent value="register" className="mt-4 space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="reg-name">Nombre</Label>
-                  <Input
-                    id="reg-name"
-                    placeholder="Tu nombre"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="reg-email">Email</Label>
-                  <Input
-                    id="reg-email"
-                    type="email"
-                    placeholder="vos@ejemplo.com.ar"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="reg-pass">Contraseña</Label>
-                  <Input
-                    id="reg-pass"
-                    type="password"
-                    placeholder="Mínimo 8 caracteres (demo)"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                  />
-                </div>
-                <Button
-                  className="pf-btn-emphasis w-full rounded-xl shadow-none"
-                  size="lg"
-                  onClick={() => goFeed(name)}
-                >
-                  Crear cuenta y entrar
-                </Button>
-              </TabsContent>
-            </Tabs>
+        <Card className="pf-surface-soft border border-border/40 shadow-none">
+          <CardContent className="space-y-4 pt-6">
+            <Button
+              type="button"
+              variant="outline"
+              size="lg"
+              className="h-12 w-full gap-3 rounded-xl border-border/80 bg-white text-[0.95rem] font-semibold text-foreground shadow-sm hover:bg-white/95 dark:bg-card"
+              onClick={() => void continueWithGoogle()}
+              disabled={loading}
+            >
+              <GoogleMark className="size-5 shrink-0" />
+              {loading ? "Conectando…" : "Continuar con Google"}
+            </Button>
+            <p className="text-center text-[0.7rem] leading-snug text-muted-foreground">
+              Usamos tu cuenta Google solo para identificarte y proteger tus avisos.
+            </p>
           </CardContent>
         </Card>
-
-        <Button
-          variant="ghost"
-          className="mt-4 w-full text-sm text-muted-foreground"
-          size="sm"
-          onClick={() => goFeed("María")}
-        >
-          Probar demo sin registrarme
-        </Button>
 
         <ul className="mt-8 space-y-3 text-sm text-muted-foreground">
           <li className="flex gap-2">
@@ -190,14 +96,10 @@ function LoginContent() {
           </li>
           <li className="flex gap-2">
             <Shield className="size-4 shrink-0 text-primary" />
-            Fase 1: prototipo visual, sin backend ni datos reales
+            Fotos en Cloudinary, datos en Postgres — v1 funcional
           </li>
         </ul>
       </div>
     </div>
   );
-}
-
-export default function HomePage() {
-  return <LoginContent />;
 }

@@ -1,60 +1,75 @@
 # PawFinder
 
-Prototipo estático **Fase 1** de PawFinder: una app estilo Tinder para reunir mascotas perdidas con quienes las encontraron. UI en español (Argentina), mobile-first, sin backend ni autenticación real.
+App para reunir mascotas perdidas con quienes las encontraron. UI en español (Argentina), mobile-first, **v1 funcional** con Google OAuth, Postgres (Neon), Cloudinary y flujo match → encuentro.
 
 ## Stack
 
-- Next.js (App Router) + TypeScript
-- Tailwind CSS v4 + [shadcn/ui](https://ui.shadcn.com)
-- Leaflet / react-leaflet (mapa con datos mock)
-- Framer Motion (gestos en el feed)
+- Next.js 16 (App Router) + TypeScript
+- Tailwind CSS v4 + shadcn/ui
+- Auth.js (NextAuth v5) + Google OAuth
+- Prisma 6 + PostgreSQL (Neon)
+- Cloudinary (fotos de avisos)
+- Leaflet / react-leaflet
 
 ## Requisitos
 
 - Node.js 20+
 - npm
+- Cuentas: Google Cloud OAuth, Neon, Cloudinary
 
-## Desarrollo local
+## Configuración
+
+1. Cloná el repo y instalá dependencias:
 
 ```bash
 npm install
-npm run dev -- -p 43123
 ```
 
-Abrí [http://localhost:43123](http://localhost:43123).
+2. Copiá `.env.example` a `.env.local` y completá:
 
-## Pantallas incluidas
+| Variable | Uso |
+|----------|-----|
+| `DATABASE_URL` | Connection string Neon |
+| `AUTH_SECRET` | `openssl rand -base64 32` |
+| `NEXTAUTH_URL` | `http://localhost:43123` en local |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | OAuth — redirect `http://localhost:43123/api/auth/callback/google` |
+| `CLOUDINARY_*` | Upload de fotos |
 
-1. **Login / registro** — visual; “Continuar” o “Probar demo” entran al app.
-2. **Feed** — tarjetas deslizables (perdidas y encontradas).
-3. **Mapa** — pines mock en CABA.
-4. **Publicar perdida / encontrada** — formulario + mapa (estado en memoria de la sesión).
-5. **Match** — confirmar o rechazar un posible hallazgo y elegir un punto de encuentro (demo).
-6. **Mis publicaciones** — crear, editar, pausar, reactivar y marcar casos como resueltos.
-7. **Notificaciones** — actividad importante separada de promociones.
-8. **Administración** — panel independiente con resumen, moderación, casos, usuarios y auspiciantes en `/admin`.
+3. Migraciones (primera vez o CI):
 
-## Flujos de producto representados
+```bash
+set -a && source .env.local && set +a
+npx prisma migrate deploy
+```
 
-- Ubicación pública aproximada y aviso de privacidad.
-- Contacto protegido hasta confirmar una coincidencia.
-- Reporte de publicaciones para revisión.
-- Ciclo de vida de avisos propios.
-- Cola de moderación con decisiones de demostración.
-- Búsqueda administrativa de casos y usuarios.
-- Alta de auspiciantes como borrador.
+## Desarrollo
 
-Todas estas acciones siguen usando datos mock y estado en memoria. Sirven para validar el producto antes de conectar persistencia y permisos reales.
+```bash
+npm run dev
+```
+
+Abrí [http://localhost:43123](http://localhost:43123) e iniciá sesión con Google.
+
+## Flujos v1
+
+- Publicar perdida / encontrada (foto + mapa + DB)
+- Explorar: swipe, lista, búsqueda y mapa desde Postgres
+- «Puede ser» crea match pendiente + notificación
+- Dueño de aviso perdido confirma o rechaza
+- Punto de encuentro (domicilio o puntos demo) y cierre (borra foto en Cloudinary)
+- Mis avisos y notificaciones in-app (+ auspiciante mock)
+
+El panel `/admin` sigue siendo **demo visual** sin backend.
 
 ## Scripts
 
-| Comando        | Descripción              |
-|----------------|--------------------------|
-| `npm run dev`  | Servidor de desarrollo   |
-| `npm run build`| Build de producción      |
-| `npm run start`| Servir build             |
-| `npm run lint` | ESLint                   |
+| Comando | Descripción |
+|---------|-------------|
+| `npm run dev` | Dev en puerto **43123** |
+| `npm run build` | `prisma generate` + build |
+| `npm run db:migrate` | `prisma migrate deploy` |
+| `npm run lint` | ESLint |
 
-## Fuera de alcance (Fase 2+)
+## Repo
 
-Express, Prisma, PostgreSQL, auth real, almacenamiento de imágenes en la nube, email.
+https://github.com/pawfinderoficial-hash/pawfinder

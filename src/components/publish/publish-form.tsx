@@ -62,37 +62,66 @@ export function PublishForm({ kind }: { kind: PetKind }) {
     return next.length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [cloudinaryPublicId, setCloudinaryPublicId] = useState<string | undefined>();
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
     setSubmitting(true);
-    const draft: PublishDraft = {
-      kind,
-      name,
-      species,
-      breed,
-      description,
-      locationLabel,
-      lat: position!.lat,
-      lng: position!.lng,
-      imageUrl,
-      contactName,
-      contactPhone,
-      contactEmail,
-    };
-    clearPublishSuccess();
-    publishPost(draft);
-    setTimeout(() => {
-      setSubmitting(false);
+    try {
+      let finalImageUrl = imageUrl;
+      let publicId = cloudinaryPublicId;
+
+      if (photoFile) {
+        const formData = new FormData();
+        formData.append("file", photoFile);
+        const uploadRes = await fetch("/api/upload", {
+          method: "POST",
+          body: formData,
+        });
+        if (!uploadRes.ok) {
+          throw new Error("No se pudo subir la foto");
+        }
+        const uploaded = (await uploadRes.json()) as {
+          url: string;
+          publicId: string;
+        };
+        finalImageUrl = uploaded.url;
+        publicId = uploaded.publicId;
+      }
+
+      const draft: PublishDraft = {
+        kind,
+        name,
+        species,
+        breed,
+        description,
+        locationLabel,
+        lat: position!.lat,
+        lng: position!.lng,
+        imageUrl: finalImageUrl,
+        contactName,
+        contactPhone,
+        contactEmail,
+      };
+      clearPublishSuccess();
+      await publishPost({ ...draft, cloudinaryPublicId: publicId });
       router.push("/feed");
-    }, 600);
+    } catch {
+      setErrors(["No pudimos publicar. Revisá tu conexión e intentá de nuevo."]);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      setPhotoFile(file);
       const url = URL.createObjectURL(file);
       setImageUrl(url);
+      setCloudinaryPublicId(undefined);
     }
   };
 
@@ -103,7 +132,7 @@ export function PublishForm({ kind }: { kind: PetKind }) {
       <div>
         <h2 className="font-heading text-xl font-semibold">{meta.heading}</h2>
         <p className="text-sm text-muted-foreground">
-          Los datos se guardan solo en esta demo (sin servidor).
+          La foto se sube a Cloudinary y el aviso queda guardado en la base de datos.
         </p>
       </div>
 

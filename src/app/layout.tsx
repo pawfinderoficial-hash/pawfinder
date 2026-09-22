@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Fraunces, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
-import { PawFinderProvider } from "@/context/pawfinder-context";
+import { Providers } from "@/components/providers";
 
 const fraunces = Fraunces({
   variable: "--font-display",
@@ -18,7 +18,7 @@ const jakarta = Plus_Jakarta_Sans({
 export const metadata: Metadata = {
   title: "PawFinder — Reuní mascotas con su familia",
   description:
-    "Prototipo PawFinder: mascotas perdidas y encontradas en tu barrio. Fase 1, sin backend.",
+    "PawFinder: reuní mascotas perdidas con quienes las encontraron en tu barrio.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
@@ -28,7 +28,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${fraunces.variable} ${jakarta.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-sans">
-        <PawFinderProvider>{children}</PawFinderProvider>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

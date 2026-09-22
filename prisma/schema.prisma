@@ -1,0 +1,162 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  image         String?
+  accounts      Account[]
+  sessions      Session[]
+  posts         PetPost[]
+  matchesInitiated Match[] @relation("MatchInitiator")
+  notifications Notification[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Account {
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([provider, providerAccountId])
+}
+
+model Session {
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@id([identifier, token])
+}
+
+enum PetKind {
+  LOST
+  FOUND
+}
+
+enum ReportStatus {
+  ACTIVE
+  REVIEWING
+  PAUSED
+  RESOLVED
+}
+
+enum MatchStatus {
+  PENDING
+  CONFIRMED
+  REJECTED
+  CLOSED
+}
+
+model PetPost {
+  id                 String       @id @default(cuid())
+  kind               PetKind
+  status             ReportStatus @default(ACTIVE)
+  name               String
+  species            String
+  breed              String?
+  description        String       @db.Text
+  locationLabel      String
+  lat                Float
+  lng                Float
+  imageUrl           String
+  cloudinaryPublicId String?
+  contactName        String
+  contactPhone       String
+  contactEmail       String?
+  views              Int          @default(0)
+  reportedAt         DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+  userId             String
+  user               User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  matchesAsLost      Match[]      @relation("LostPost")
+  matchesAsFound     Match[]      @relation("FoundPost")
+
+  @@index([status, kind])
+  @@index([userId])
+}
+
+model Match {
+  id               String      @id @default(cuid())
+  status           MatchStatus @default(PENDING)
+  message          String      @db.Text
+  finderName       String
+  initiatorId      String
+  initiator        User        @relation("MatchInitiator", fields: [initiatorId], references: [id], onDelete: Cascade)
+  lostPostId       String
+  lostPost         PetPost     @relation("LostPost", fields: [lostPostId], references: [id], onDelete: Cascade)
+  foundPostId      String
+  foundPost        PetPost     @relation("FoundPost", fields: [foundPostId], references: [id], onDelete: Cascade)
+  meetingPointId   String?
+  meetingMode      String?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  @@index([status])
+  @@index([lostPostId])
+  @@index([foundPostId])
+}
+
+model MeetingPoint {
+  id           String  @id @default(cuid())
+  name         String
+  kind         String
+  address      String
+  locality     String
+  province     String
+  lat          Float
+  lng          Float
+  hours        String?
+  phone        String?
+  isActive     Boolean @default(true)
+}
+
+enum NotificationType {
+  MATCH
+  MATCH_CONFIRMED
+  MATCH_REJECTED
+  ENCOUNTER
+  SYSTEM
+  SPONSOR
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      NotificationType
+  title     String
+  body      String           @db.Text
+  read      Boolean          @default(false)
+  matchId   String?
+  postId    String?
+  createdAt DateTime         @default(now())
+
+  @@index([userId, read])
+}

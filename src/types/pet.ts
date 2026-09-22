@@ -26,6 +26,10 @@ export interface PendingMatch {
   finderName: string;
 }
 
+export interface PublishPayload extends PublishDraft {
+  cloudinaryPublicId?: string;
+}
+
 export interface PublishDraft {
   kind: PetKind;
   name: string;
