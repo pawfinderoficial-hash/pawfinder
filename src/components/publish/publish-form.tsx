@@ -19,6 +19,9 @@ const DEFAULT_IMAGES: Record<PetKind, string> = {
     "https://images.unsplash.com/photo-1548199973-03cce0bbc87b?w=800&q=80",
 };
 
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+
 const titles: Record<PetKind, { heading: string; submit: string }> = {
   lost: {
     heading: "Publicar mascota perdida",
@@ -80,7 +83,10 @@ export function PublishForm({ kind }: { kind: PetKind }) {
           body: formData,
         });
         if (!uploadRes.ok) {
-          throw new Error("No se pudo subir la foto");
+          const uploadError = (await uploadRes.json().catch(() => ({}))) as {
+            error?: string;
+          };
+          throw new Error(uploadError.error || "No se pudo subir la foto");
         }
         const uploaded = (await uploadRes.json()) as {
           url: string;
@@ -107,8 +113,12 @@ export function PublishForm({ kind }: { kind: PetKind }) {
       clearPublishSuccess();
       await publishPost({ ...draft, cloudinaryPublicId: publicId });
       router.push("/feed");
-    } catch {
-      setErrors(["No pudimos publicar. Revisá tu conexión e intentá de nuevo."]);
+    } catch (error) {
+      setErrors([
+        error instanceof Error
+          ? error.message
+          : "No pudimos publicar. Revisá tu conexión e intentá de nuevo.",
+      ]);
     } finally {
       setSubmitting(false);
     }
@@ -117,6 +127,17 @@ export function PublishForm({ kind }: { kind: PetKind }) {
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
+        setErrors(["Formato no permitido. Usá JPG, PNG o WebP."]);
+        e.target.value = "";
+        return;
+      }
+      if (file.size > MAX_IMAGE_BYTES) {
+        setErrors(["La imagen no puede superar los 5 MB."]);
+        e.target.value = "";
+        return;
+      }
+      setErrors([]);
       setPhotoFile(file);
       const url = URL.createObjectURL(file);
       setImageUrl(url);
@@ -168,7 +189,7 @@ export function PublishForm({ kind }: { kind: PetKind }) {
           Cambiar foto (ejemplo local)
           <input
             type="file"
-            accept="image/*"
+            accept="image/jpeg,image/png,image/webp"
             className="sr-only"
             onChange={handlePhotoChange}
           />

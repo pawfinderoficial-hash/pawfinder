@@ -39,6 +39,12 @@ export async function PATCH(
         { status: 403 },
       );
     }
+    if (match.status !== MatchStatus.PENDING) {
+      return Response.json(
+        { error: "El match ya fue procesado" },
+        { status: 409 },
+      );
+    }
     await prisma.match.update({
       where: { id },
       data: { status: MatchStatus.CONFIRMED },
@@ -68,6 +74,12 @@ export async function PATCH(
     if (!isLostOwner) {
       return Response.json({ error: "No autorizado" }, { status: 403 });
     }
+    if (match.status !== MatchStatus.PENDING) {
+      return Response.json(
+        { error: "El match ya fue procesado" },
+        { status: 409 },
+      );
+    }
     await prisma.match.update({
       where: { id },
       data: { status: MatchStatus.REJECTED },
@@ -87,6 +99,22 @@ export async function PATCH(
   if (action === "encounter") {
     const meetingMode = body.meetingMode as string;
     const meetingPointId = body.meetingPointId as string | undefined;
+
+    if (match.status !== MatchStatus.CONFIRMED) {
+      return Response.json(
+        { error: "El match debe estar confirmado antes del encuentro" },
+        { status: 409 },
+      );
+    }
+    if (!['home', 'point'].includes(meetingMode)) {
+      return Response.json({ error: "Modalidad inválida" }, { status: 400 });
+    }
+    if (meetingMode === "point" && !meetingPointId) {
+      return Response.json(
+        { error: "Punto de encuentro requerido" },
+        { status: 400 },
+      );
+    }
 
     await prisma.match.update({
       where: { id },

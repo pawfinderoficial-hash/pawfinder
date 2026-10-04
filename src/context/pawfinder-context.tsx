@@ -121,17 +121,21 @@ export function PawFinderProvider({ children }: { children: ReactNode }) {
   }, [status]);
 
   useEffect(() => {
-    if (status === "authenticated") {
-      void refreshAll();
-    }
-    if (status === "unauthenticated") {
-      setAllPosts([]);
-      setFeedStack([]);
-      setOwnedReports([]);
-      setPendingMatch(null);
-      setEncounterMatch(null);
-      setNotifications([]);
-    }
+    const timer = window.setTimeout(() => {
+      if (status === "authenticated") {
+        void refreshAll();
+      }
+      if (status === "unauthenticated") {
+        setAllPosts([]);
+        setFeedStack([]);
+        setOwnedReports([]);
+        setPendingMatch(null);
+        setEncounterMatch(null);
+        setNotifications([]);
+      }
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, [status, refreshAll]);
 
   const swipeCard = useCallback(

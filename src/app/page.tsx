@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { signIn, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { PawPrint, Heart, Shield } from "lucide-react";
@@ -40,10 +40,11 @@ export default function HomePage() {
   const { status } = useSession();
   const [loading, setLoading] = useState(false);
 
-  if (status === "authenticated") {
-    router.replace("/feed");
-    return null;
-  }
+  useEffect(() => {
+    if (status === "authenticated") router.replace("/feed");
+  }, [router, status]);
+
+  if (status === "authenticated") return null;
 
   const continueWithGoogle = async () => {
     setLoading(true);

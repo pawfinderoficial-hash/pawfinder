@@ -18,9 +18,17 @@ function mapStatus(status: DbPetPost["status"]): ReportStatus {
 
 export function toPetPost(
   post: DbPetPost,
-  options?: { includeContact?: boolean },
+  options?: { includeContact?: boolean; includeExactLocation?: boolean },
 ): PetPost {
   const includeContact = options?.includeContact ?? false;
+  const includeExactLocation = options?.includeExactLocation ?? includeContact;
+  const hash = Array.from(post.id).reduce(
+    (total, character) => total + character.charCodeAt(0),
+    0,
+  );
+  const latOffset = ((hash % 7) - 3) * 0.00035;
+  const lngOffset = (((hash * 3) % 7) - 3) * 0.0004;
+
   return {
     id: post.id,
     kind: mapKind(post.kind),
@@ -29,8 +37,8 @@ export function toPetPost(
     breed: post.breed ?? undefined,
     description: post.description,
     locationLabel: post.locationLabel,
-    lat: post.lat,
-    lng: post.lng,
+    lat: includeExactLocation ? post.lat : post.lat + latOffset,
+    lng: includeExactLocation ? post.lng : post.lng + lngOffset,
     imageUrl: post.imageUrl,
     contactName: includeContact ? post.contactName : "",
     contactPhone: includeContact ? post.contactPhone : "",

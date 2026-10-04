@@ -80,16 +80,6 @@ interface PetMapProps {
   zoom?: number;
 }
 
-function publicPosition(post: PetPost): [number, number] {
-  const hash = Array.from(post.id).reduce(
-    (total, character) => total + character.charCodeAt(0),
-    0,
-  );
-  const latOffset = ((hash % 7) - 3) * 0.00035;
-  const lngOffset = (((hash * 3) % 7) - 3) * 0.0004;
-  return [post.lat + latOffset, post.lng + lngOffset];
-}
-
 export function PetMapInner({
   posts,
   heightClass = "h-[min(60vh,480px)]",
@@ -111,8 +101,11 @@ export function PetMapInner({
   } | null>(null);
   const pickerPositionRef = useRef(pickerPosition);
   const onPickLocationRef = useRef(onPickLocation);
-  pickerPositionRef.current = pickerPosition;
-  onPickLocationRef.current = onPickLocation;
+
+  useEffect(() => {
+    pickerPositionRef.current = pickerPosition;
+    onPickLocationRef.current = onPickLocation;
+  }, [pickerPosition, onPickLocation]);
 
   useEffect(() => {
     delete (L.Icon.Default.prototype as unknown as { _getIconUrl?: unknown })
@@ -180,7 +173,7 @@ export function PetMapInner({
         {posts.map((post) => (
           <Marker
             key={post.id}
-            position={publicPosition(post)}
+            position={[post.lat, post.lng]}
             icon={post.kind === "lost" ? lostIcon : foundIcon}
             eventHandlers={
               onMarkerClick

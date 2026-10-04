@@ -6,27 +6,36 @@ Quiero que actues como arquitecto de software y product engineer senior. Analiza
 
 PawFinder busca reunir mascotas perdidas con las personas que creen haberlas encontrado. La experiencia propuesta combina publicaciones, exploracion mediante tarjetas o lista, mapa, posibles coincidencias, confirmacion del encuentro y notificaciones.
 
-El repositorio actual es un prototipo visual de Fase 1. Esta hecho con Next.js 16, React 19, TypeScript, Tailwind CSS, shadcn/ui, Leaflet y Framer Motion. La aplicacion corre localmente en `http://localhost:43123`.
+El repositorio evoluciono desde un prototipo visual a una v1 full-stack. Esta hecho con Next.js 16, React 19, TypeScript, Tailwind CSS, shadcn/ui, Leaflet y Framer Motion. La aplicacion corre localmente en `http://localhost:43123`.
 
-Actualmente no hay backend, API, base de datos ni autenticacion real. Los datos principales viven en memoria dentro de un contexto React y solo el nombre de usuario se conserva temporalmente en `sessionStorage`.
+Actualmente hay Route Handlers en `src/app/api`, autenticacion Google con Auth.js, Prisma 6, PostgreSQL/Neon y Cloudinary. Parte del producto sigue siendo demostracion: administracion, auspiciantes y puntos de encuentro. El contexto React consume las APIs reales, pero todavia concentra bastante estado de interfaz y orquestacion.
 
 ## Funcionalidad existente
 
-- Login y registro visual, incluido acceso de demostracion.
+- Login real con Google OAuth.
 - Feed de mascotas perdidas y encontradas.
 - Vista de tarjetas deslizables y vista de lista.
 - Busqueda por nombre, raza, especie, descripcion y ubicacion.
-- Mapa con marcadores simulados en CABA.
+- Mapa con avisos de Postgres, geolocalizacion del navegador y coordenadas publicas aproximadas.
 - Formularios para publicar mascotas perdidas o encontradas.
-- Carga local temporal de una fotografia.
+- Carga de fotografias en Cloudinary.
 - Flujo de posible match, confirmacion y seleccion de punto de encuentro.
 - Notificaciones de matches, actividad y promociones de auspiciantes.
 - Gestion de avisos propios: editar, pausar, reactivar y resolver.
-- Indicaciones de ubicacion aproximada y contacto protegido.
+- Ubicacion publica aproximada; contacto revelado en los flujos autorizados.
 - Reporte de publicaciones.
 - Panel administrativo independiente en `/admin`.
 - Moderacion, seguimiento de casos, usuarios y auspiciantes con datos demo.
 - Interfaz mobile-first.
+
+## Estado tecnico actualizado
+
+- Backend monolitico dentro de Next.js mediante Route Handlers.
+- Datos persistidos en PostgreSQL con el esquema de `prisma/schema.prisma`.
+- Sesiones persistidas con Auth.js y adaptador Prisma.
+- El panel `/admin` requiere sesion, pero no tiene roles ni operaciones reales.
+- No existen todavia chat interno, sugerencias con IA, moderacion persistida ni filtros geograficos por ciudad/radio.
+- `README.md` contiene la configuracion local, migracion a otra computadora y pendientes de produccion.
 
 ## Observaciones iniciales a validar
 

@@ -59,7 +59,33 @@ Abrí [http://localhost:43123](http://localhost:43123) e iniciá sesión con Goo
 - Punto de encuentro (domicilio o puntos demo) y cierre (borra foto en Cloudinary)
 - Mis avisos y notificaciones in-app (+ auspiciante mock)
 
-El panel `/admin` sigue siendo **demo visual** sin backend.
+El panel `/admin` sigue siendo **demo visual** sin backend ni roles. Requiere sesión,
+pero no debe considerarse un panel administrativo seguro hasta implementar permisos.
+
+## Migración a otra computadora
+
+1. Verificá que los cambios estén publicados en el remoto con `git status` y
+   `git push origin main`.
+2. Cloná el repositorio y ejecutá `npm ci`.
+3. Recreá `.env.local` desde `.env.example`. Este archivo contiene secretos y no
+   se versiona; transferilo por un canal seguro o generá credenciales nuevas.
+4. En Google Cloud agregá el callback local
+   `http://localhost:43123/api/auth/callback/google` y el callback de producción.
+5. Ejecutá `npm run db:migrate`, `npm run lint` y `npm run build`.
+6. Levantá la app con `npm run dev` y abrí
+   [http://localhost:43123](http://localhost:43123).
+
+La base Neon y las imágenes Cloudinary son servicios remotos: no hace falta copiar
+archivos de datos locales si se conservan sus credenciales.
+
+## Pendientes antes de producción
+
+- Implementar roles y backend real para administración/moderación.
+- Validar todos los cuerpos JSON de las APIs y agregar límites de frecuencia.
+- Persistir puntos de encuentro; actualmente se muestran datos demo.
+- Definir mensajería interna, selección de aviso al crear un match e IA de sugerencias.
+- Resolver el historial de imágenes cerradas: hoy Cloudinary borra la foto al cerrar
+  un encuentro, pero el aviso conserva su URL.
 
 ## Scripts
 

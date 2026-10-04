@@ -4,7 +4,7 @@ import { authConfig } from "@/auth.config";
 
 const { auth } = NextAuth(authConfig);
 
-export default auth((req) => {
+export const proxy = auth((req) => {
   const { pathname } = req.nextUrl;
   const isLoggedIn = !!req.auth;
 
@@ -15,6 +15,7 @@ export default auth((req) => {
     "/mis-avisos",
     "/notificaciones",
     "/publicar",
+    "/admin",
   ];
 
   const needsAuth = protectedPrefixes.some((prefix) =>
@@ -46,5 +47,6 @@ export const config = {
     "/mis-avisos/:path*",
     "/notificaciones/:path*",
     "/publicar/:path*",
+    "/admin/:path*",
   ],
 };
