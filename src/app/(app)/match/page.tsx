@@ -1,24 +1,147 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { flushSync } from "react-dom";
+import { useState } from "react";
 import { AppHeader } from "@/components/layout/app-header";
 import { usePawFinder } from "@/context/pawfinder-context";
 import { Button } from "@/components/ui/button";
 import { PetPostCard } from "@/components/pet/pet-post-card";
+import type { PendingSighting } from "@/types/pet";
 import {
+  Eye,
   HeartHandshake,
   LockKeyhole,
+  MessageCircle,
   PartyPopper,
+  Phone,
 } from "lucide-react";
+
+function SightingCard({
+  sighting,
+  onContact,
+  onDismiss,
+}: {
+  sighting: PendingSighting;
+  onContact: () => Promise<void>;
+  onDismiss: () => Promise<void>;
+}) {
+  const [busy, setBusy] = useState(false);
+  const phone = sighting.contactPhone;
+
+  return (
+    <article className="space-y-3 rounded-2xl border border-border/50 bg-card/90 p-4 shadow-sm">
+      <div className="flex items-start gap-3">
+        {sighting.imageUrl ? (
+          <div className="relative size-16 shrink-0 overflow-hidden rounded-xl bg-muted">
+            <Image
+              src={sighting.imageUrl}
+              alt=""
+              fill
+              className="object-cover"
+              sizes="64px"
+            />
+          </div>
+        ) : (
+          <div className="flex size-16 shrink-0 items-center justify-center rounded-xl bg-muted">
+            <Eye className="size-6 text-muted-foreground" />
+          </div>
+        )}
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Avistamiento · {sighting.lostPost.name}
+          </p>
+          <p className="mt-0.5 font-heading text-base font-semibold">
+            {sighting.reporterName}
+          </p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {sighting.locationLabel}
+            {sighting.seenAt
+              ? ` · ${new Date(sighting.seenAt).toLocaleString("es-AR", {
+                  day: "numeric",
+                  month: "short",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}`
+              : null}
+          </p>
+        </div>
+      </div>
+      <p className="text-sm leading-relaxed text-foreground/90">{sighting.note}</p>
+
+      {phone ? (
+        <div className="rounded-xl border border-primary/20 bg-primary/10 px-3 py-2.5 text-sm">
+          <p className="font-medium">Teléfono del avistador</p>
+          <a
+            href={`tel:${phone}`}
+            className="mt-1 inline-flex items-center gap-1.5 font-semibold text-primary"
+          >
+            <Phone className="size-4" />
+            {phone}
+          </a>
+          <p className="mt-1 text-xs text-muted-foreground">
+            El avistador no ve tu teléfono en este paso.
+          </p>
+        </div>
+      ) : (
+        <div className="flex gap-2 rounded-xl border border-border/50 bg-muted/40 p-3 text-sm text-muted-foreground">
+          <LockKeyhole className="mt-0.5 size-4 shrink-0 text-primary" />
+          <p>
+            Todavía no hay teléfonos revelados. Si querés hablar, vas a ver solo
+            el teléfono de quien avistó.
+          </p>
+        </div>
+      )}
+
+      <div className="flex flex-col gap-2 sm:flex-row">
+        {!phone ? (
+          <Button
+            className="pf-btn-emphasis flex-1 rounded-xl shadow-none"
+            disabled={busy}
+            onClick={async () => {
+              setBusy(true);
+              try {
+                await onContact();
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            <MessageCircle className="size-4" />
+            Quiero hablar
+          </Button>
+        ) : null}
+        <Button
+          variant="outline"
+          className="flex-1 rounded-xl"
+          disabled={busy}
+          onClick={async () => {
+            setBusy(true);
+            try {
+              await onDismiss();
+            } finally {
+              setBusy(false);
+            }
+          }}
+        >
+          Descartar
+        </Button>
+      </div>
+    </article>
+  );
+}
 
 export default function MatchPage() {
   const router = useRouter();
   const {
     pendingMatch,
+    pendingSightings,
     beginEncounterAfterConfirm,
     rejectMatch,
+    contactSighting,
+    dismissSighting,
   } = usePawFinder();
 
   const handleConfirm = () => {
@@ -28,20 +151,23 @@ export default function MatchPage() {
     router.push("/match/encuentro");
   };
 
-  if (!pendingMatch) {
+  const hasMatch = Boolean(pendingMatch);
+  const hasSightings = pendingSightings.length > 0;
+
+  if (!hasMatch && !hasSightings) {
     return (
       <>
-        <AppHeader title="Match" subtitle="Posibles reuniones" />
+        <AppHeader title="Match" subtitle="Posibles reuniones y avistamientos" />
         <div className="flex flex-col items-center px-6 py-16 text-center">
           <div className="pf-empty-icon mb-4">
             <HeartHandshake className="size-8" />
           </div>
           <h2 className="font-heading text-xl font-semibold">
-            No tenés matches pendientes
+            No tenés novedades pendientes
           </h2>
           <p className="mt-2 max-w-sm text-sm leading-relaxed text-muted-foreground">
-            Cuando alguien crea que encontró a tu mascota, vas a poder confirmar
-            o rechazar acá.
+            Acá vas a ver matches de hallazgo y avistamientos sobre tus mascotas
+            perdidas.
           </p>
           <Link
             href="/feed"
@@ -54,48 +180,80 @@ export default function MatchPage() {
     );
   }
 
-  const { foundPost, message, finderName } = pendingMatch;
-
   return (
     <>
-      <AppHeader title="¡Posible match!" subtitle={`Mensaje de ${finderName}`} />
-      <div className="space-y-5 px-4 py-4">
-        <div className="rounded-2xl border border-primary/15 bg-primary/10 p-4 text-sm leading-relaxed text-foreground/90">
-          {message}
-        </div>
+      <AppHeader
+        title={hasMatch ? "¡Posible match!" : "Avistamientos"}
+        subtitle={
+          hasMatch
+            ? `Mensaje de ${pendingMatch!.finderName}`
+            : "Alguien cree haber visto a tu mascota"
+        }
+      />
+      <div className="space-y-6 px-4 py-4">
+        {hasMatch ? (
+          <section className="space-y-5">
+            <div className="rounded-2xl border border-primary/15 bg-primary/10 p-4 text-sm leading-relaxed text-foreground/90">
+              {pendingMatch!.message}
+            </div>
 
-        <PetPostCard post={foundPost} priority />
+            <PetPostCard post={pendingMatch!.foundPost} priority />
 
-        <div className="flex gap-2 rounded-2xl border border-border/50 bg-muted/40 p-3 text-sm text-muted-foreground">
-          <LockKeyhole className="mt-0.5 size-4 shrink-0 text-primary" />
-          <p>
-            El telefono se habilita despues de confirmar la coincidencia. No se
-            muestra contacto personal en publicaciones publicas.
-          </p>
-        </div>
+            <div className="flex gap-2 rounded-2xl border border-border/50 bg-muted/40 p-3 text-sm text-muted-foreground">
+              <LockKeyhole className="mt-0.5 size-4 shrink-0 text-primary" />
+              <p>
+                El telefono se habilita despues de confirmar la coincidencia. No se
+                muestra contacto personal en publicaciones publicas.
+              </p>
+            </div>
 
-        <p className="text-center text-sm text-muted-foreground">
-          ¿Es tu mascota? Confirmá solo si estás seguro/a.
-        </p>
+            <p className="text-center text-sm text-muted-foreground">
+              ¿Es tu mascota? Confirmá solo si estás seguro/a.
+            </p>
 
-        <div className="flex flex-col gap-3 sm:flex-row">
-          <Button
-            size="lg"
-            className="pf-btn-emphasis flex-1 rounded-xl shadow-none"
-            onClick={handleConfirm}
-          >
-            <PartyPopper className="size-5" />
-            Confirmar — ¡es mi mascota!
-          </Button>
-          <Button
-            size="lg"
-            variant="outline"
-            className="flex-1"
-            onClick={rejectMatch}
-          >
-            Rechazar
-          </Button>
-        </div>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Button
+                size="lg"
+                className="pf-btn-emphasis flex-1 rounded-xl shadow-none"
+                onClick={handleConfirm}
+              >
+                <PartyPopper className="size-5" />
+                Confirmar — ¡es mi mascota!
+              </Button>
+              <Button
+                size="lg"
+                variant="outline"
+                className="flex-1"
+                onClick={rejectMatch}
+              >
+                Rechazar
+              </Button>
+            </div>
+          </section>
+        ) : null}
+
+        {hasSightings ? (
+          <section className="space-y-3">
+            {hasMatch ? (
+              <div>
+                <h2 className="font-heading text-lg font-semibold">
+                  Avistamientos
+                </h2>
+                <p className="text-xs text-muted-foreground">
+                  No cierran tu aviso de búsqueda
+                </p>
+              </div>
+            ) : null}
+            {pendingSightings.map((s) => (
+              <SightingCard
+                key={s.id}
+                sighting={s}
+                onContact={() => contactSighting(s.id).then(() => undefined)}
+                onDismiss={() => dismissSighting(s.id)}
+              />
+            ))}
+          </section>
+        ) : null}
       </div>
     </>
   );

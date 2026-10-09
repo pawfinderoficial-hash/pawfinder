@@ -33,7 +33,13 @@ const titles: Record<PetKind, { heading: string; submit: string }> = {
   },
 };
 
-export function PublishForm({ kind }: { kind: PetKind }) {
+export function PublishForm({
+  kind,
+  targetLostPostId,
+}: {
+  kind: PetKind;
+  targetLostPostId?: string;
+}) {
   const router = useRouter();
   const { publishPost, clearPublishSuccess } = usePawFinder();
   const [imageUrl, setImageUrl] = useState(DEFAULT_IMAGES[kind]);
@@ -109,10 +115,13 @@ export function PublishForm({ kind }: { kind: PetKind }) {
         contactName,
         contactPhone,
         contactEmail,
+        ...(kind === "found" && targetLostPostId
+          ? { targetLostPostId }
+          : {}),
       };
       clearPublishSuccess();
       await publishPost({ ...draft, cloudinaryPublicId: publicId });
-      router.push("/feed");
+      router.push(kind === "found" && targetLostPostId ? "/match" : "/feed");
     } catch (error) {
       setErrors([
         error instanceof Error
@@ -152,7 +161,9 @@ export function PublishForm({ kind }: { kind: PetKind }) {
       <div>
         <h2 className="font-heading text-xl font-semibold">{meta.heading}</h2>
         <p className="text-sm text-muted-foreground">
-          La foto se sube a Cloudinary y el aviso queda guardado en la base de datos.
+          {targetLostPostId && kind === "found"
+            ? "Al publicar se crea un match pendiente con el aviso de pérdida que marcaste."
+            : "La foto se sube a Cloudinary y el aviso queda guardado en la base de datos."}
         </p>
       </div>
 

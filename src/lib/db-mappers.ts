@@ -83,6 +83,8 @@ function mapNotificationKind(
       return "confirmacion";
     case "MATCH_REJECTED":
       return "puede_ser";
+    case "SIGHTING":
+      return "avistamiento";
     case "SPONSOR":
       return "sponsor";
     default:
@@ -99,6 +101,9 @@ export function toAppNotification(n: DbNotification): AppNotification {
     detail: n.body,
     createdAt: formatRelative(n.createdAt),
     read: n.read,
+    sightingId: n.sightingId ?? undefined,
+    postId: n.postId ?? undefined,
+    matchId: n.matchId ?? undefined,
     sponsorName: n.type === "SPONSOR" ? "PetShop Barrio Norte" : undefined,
     sponsorBadge: n.type === "SPONSOR" ? "Auspiciante" : undefined,
   };

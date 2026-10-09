@@ -2,6 +2,7 @@ export type NotificationKind =
   | "match"
   | "puede_ser"
   | "confirmacion"
+  | "avistamiento"
   | "sponsor";
 
 export interface AppNotification {
@@ -12,6 +13,9 @@ export interface AppNotification {
   detail: string;
   createdAt: string;
   read: boolean;
+  sightingId?: string;
+  postId?: string;
+  matchId?: string;
   sponsorName?: string;
   sponsorBadge?: "Auspiciante" | "Oferta";
 }
@@ -81,6 +85,8 @@ export function notificationKindLabel(kind: NotificationKind): string {
       return "Puede ser";
     case "confirmacion":
       return "Confirmación";
+    case "avistamiento":
+      return "Avistamiento";
     case "sponsor":
       return "Auspiciante";
   }

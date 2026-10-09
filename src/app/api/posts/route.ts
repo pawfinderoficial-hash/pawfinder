@@ -1,4 +1,4 @@
-import { PetKind, ReportStatus } from "@prisma/client";
+import { MatchStatus, PetKind, ReportStatus } from "@prisma/client";
 import { requireUserId } from "@/lib/api-auth";
 import { toPetPost } from "@/lib/db-mappers";
 import { prisma } from "@/lib/prisma";
@@ -29,6 +29,8 @@ export async function POST(request: Request) {
 
   const body = await request.json();
   const kind = body.kind === "found" ? PetKind.FOUND : PetKind.LOST;
+  const targetLostPostId =
+    typeof body.targetLostPostId === "string" ? body.targetLostPostId : null;
 
   const post = await prisma.petPost.create({
     data: {
@@ -51,5 +53,60 @@ export async function POST(request: Request) {
     },
   });
 
-  return Response.json({ post: toPetPost(post, { includeContact: true }) });
+  let matchId: string | undefined;
+
+  if (kind === PetKind.FOUND && targetLostPostId) {
+    const lostPost = await prisma.petPost.findUnique({
+      where: { id: targetLostPostId },
+    });
+    if (
+      lostPost &&
+      lostPost.kind === PetKind.LOST &&
+      lostPost.status === ReportStatus.ACTIVE &&
+      lostPost.userId !== userId
+    ) {
+      const existing = await prisma.match.findFirst({
+        where: {
+          lostPostId: lostPost.id,
+          foundPostId: post.id,
+          status: { in: [MatchStatus.PENDING, MatchStatus.CONFIRMED] },
+        },
+      });
+      if (!existing) {
+        const sessionUser = await prisma.user.findUnique({
+          where: { id: userId },
+        });
+        const finderName = sessionUser?.name || body.contactName || "Vecino/a";
+        const message = `Hola, creo que puede haber una coincidencia con ${lostPost.name}. ¿Podemos revisar juntos?`;
+        const match = await prisma.match.create({
+          data: {
+            status: MatchStatus.PENDING,
+            message,
+            finderName,
+            initiatorId: userId,
+            lostPostId: lostPost.id,
+            foundPostId: post.id,
+          },
+        });
+        matchId = match.id;
+        await prisma.notification.create({
+          data: {
+            userId: lostPost.userId,
+            type: "MATCH",
+            title: `¡Posible match con ${lostPost.name}!`,
+            body: `${finderName} publicó un hallazgo vinculado a tu aviso.`,
+            matchId: match.id,
+            postId: post.id,
+          },
+        });
+      } else {
+        matchId = existing.id;
+      }
+    }
+  }
+
+  return Response.json({
+    post: toPetPost(post, { includeContact: true }),
+    matchId,
+  });
 }

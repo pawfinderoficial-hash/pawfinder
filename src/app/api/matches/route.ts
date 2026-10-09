@@ -43,13 +43,11 @@ export async function POST(request: Request) {
   } else {
     const myFound = myPosts.find((p) => p.kind === PetKind.FOUND);
     if (!myFound) {
-      return Response.json(
-        {
-          error:
-            "Publicá un aviso de hallazgo para contactar a quien perdió la mascota.",
-        },
-        { status: 400 },
-      );
+      return Response.json({
+        needsChoice: true,
+        targetLostPostId: target.id,
+        targetName: target.name,
+      });
     }
     lostPostId = target.id;
     foundPostId = myFound.id;
@@ -102,16 +100,18 @@ export async function POST(request: Request) {
     });
   }
 
-  await prisma.notification.create({
-    data: {
-      userId: foundPost.userId,
-      type: "MATCH",
-      title: "Nuevo interés en tu aviso",
-      body: `${finderName} quiere revisar una posible coincidencia.`,
-      matchId: match.id,
-      postId: lostPostId,
-    },
-  });
+  if (foundPost.userId !== userId) {
+    await prisma.notification.create({
+      data: {
+        userId: foundPost.userId,
+        type: "MATCH",
+        title: "Nuevo interés en tu aviso",
+        body: `${finderName} quiere revisar una posible coincidencia.`,
+        matchId: match.id,
+        postId: lostPostId,
+      },
+    });
+  }
 
   return Response.json({ ok: true, matchId: match.id });
 }

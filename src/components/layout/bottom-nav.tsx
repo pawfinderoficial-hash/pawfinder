@@ -23,7 +23,7 @@ const navSpring = { type: "spring" as const, stiffness: 420, damping: 32 };
 
 export function BottomNav() {
   const pathname = usePathname();
-  const { pendingMatch } = usePawFinder();
+  const { pendingMatch, pendingSightings } = usePawFinder();
 
   return (
     <nav
@@ -33,7 +33,9 @@ export function BottomNav() {
       <div className="mx-auto flex max-w-lg items-stretch justify-around px-2 py-1.5 md:max-w-2xl">
         {links.map(({ href, label, icon: Icon }) => {
           const active = pathname === href || pathname.startsWith(`${href}/`);
-          const showBadge = href === "/match" && pendingMatch;
+          const showBadge =
+            href === "/match" &&
+            (Boolean(pendingMatch) || pendingSightings.length > 0);
           return (
             <Link
               key={href}

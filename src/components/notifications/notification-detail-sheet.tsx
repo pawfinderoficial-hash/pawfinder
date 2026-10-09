@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   Sheet,
   SheetContent,
@@ -11,6 +12,8 @@ import { Badge } from "@/components/ui/badge";
 import type { AppNotification } from "@/lib/mock-notifications";
 import { notificationKindLabel } from "@/lib/mock-notifications";
 import { Sparkles } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { buttonVariants } from "@/components/ui/button";
 
 interface NotificationDetailSheetProps {
   notification: AppNotification | null;
@@ -26,6 +29,7 @@ export function NotificationDetailSheet({
   if (!notification) return null;
 
   const isSponsor = notification.kind === "sponsor";
+  const isSighting = notification.kind === "avistamiento";
   const sponsorBadge =
     notification.sponsorBadge ??
     (isSponsor ? notificationKindLabel("sponsor") : null);
@@ -57,14 +61,23 @@ export function NotificationDetailSheet({
             {notification.body}
           </SheetDescription>
         </SheetHeader>
-        <div className="px-4 pb-6">
+        <div className="space-y-3 px-4 pb-6">
           <p className="rounded-2xl border border-border/50 bg-muted/30 px-4 py-3 text-sm leading-relaxed text-foreground/90">
             {notification.detail}
           </p>
           {notification.sponsorName ? (
-            <p className="mt-3 text-xs text-muted-foreground">
+            <p className="text-xs text-muted-foreground">
               Auspiciante: {notification.sponsorName}
             </p>
+          ) : null}
+          {isSighting ? (
+            <Link
+              href="/match"
+              onClick={() => onOpenChange(false)}
+              className={cn(buttonVariants({ size: "lg" }), "w-full rounded-xl")}
+            >
+              Ver en Match
+            </Link>
           ) : null}
         </div>
       </SheetContent>

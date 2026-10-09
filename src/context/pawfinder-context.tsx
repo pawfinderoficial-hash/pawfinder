@@ -15,11 +15,15 @@ import { MOCK_MEETING_POINTS, type MeetingPoint } from "@/lib/mock-meeting-point
 import type {
   OwnedReport,
   PendingMatch,
+  PendingSighting,
   PetPost,
   PublishDraft,
+  PuedeSerChoice,
   ReportStatus,
+  SightingDraft,
 } from "@/types/pet";
 import type { FeedViewMode } from "@/components/feed/feed-view-toggle";
+import { PuedeSerChoiceSheet } from "@/components/feed/puede-ser-choice-sheet";
 
 export type EncounterResult =
   | { mode: "home" }
@@ -38,6 +42,7 @@ interface PawFinderContextValue {
   swipeCard: (direction: "left" | "right", postId: string) => void;
   resetFeed: () => void;
   publishPost: (draft: PublishDraft & { cloudinaryPublicId?: string }) => Promise<void>;
+  publishSighting: (draft: SightingDraft) => Promise<void>;
   ownedReports: OwnedReport[];
   updateReportStatus: (reportId: string, status: ReportStatus) => Promise<void>;
   updateOwnedReport: (
@@ -45,9 +50,12 @@ interface PawFinderContextValue {
     changes: Pick<OwnedReport, "name" | "description" | "locationLabel">,
   ) => Promise<void>;
   pendingMatch: PendingMatch | null;
+  pendingSightings: PendingSighting[];
   restoreDemoMatch: () => void;
   beginEncounterAfterConfirm: () => Promise<void>;
   rejectMatch: () => Promise<void>;
+  contactSighting: (sightingId: string) => Promise<{ contactPhone: string; contactName: string }>;
+  dismissSighting: (sightingId: string) => Promise<void>;
   encounterMatch: PendingMatch | null;
   encounterResult: EncounterResult | null;
   completeEncounterAtHome: () => Promise<void>;
@@ -81,6 +89,9 @@ export function PawFinderProvider({ children }: { children: ReactNode }) {
   const [feedStack, setFeedStack] = useState<PetPost[]>([]);
   const [ownedReports, setOwnedReports] = useState<OwnedReport[]>([]);
   const [pendingMatch, setPendingMatch] = useState<PendingMatch | null>(null);
+  const [pendingSightings, setPendingSightings] = useState<PendingSighting[]>(
+    [],
+  );
   const [encounterMatch, setEncounterMatch] = useState<PendingMatch | null>(null);
   const [encounterResult, setEncounterResult] = useState<EncounterResult | null>(
     null,
@@ -90,12 +101,16 @@ export function PawFinderProvider({ children }: { children: ReactNode }) {
   const [feedViewMode, setFeedViewMode] = useState<FeedViewMode>("swipe");
   const [feedSearchQuery, setFeedSearchQuery] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [puedeSerChoice, setPuedeSerChoice] = useState<PuedeSerChoice | null>(
+    null,
+  );
+  const [choiceOpen, setChoiceOpen] = useState(false);
 
   const refreshAll = useCallback(async () => {
     if (status !== "authenticated") return;
     setIsLoading(true);
     try {
-      const [postsRes, mineRes, pendingRes, encounterRes, notifRes] =
+      const [postsRes, mineRes, pendingRes, encounterRes, notifRes, sightingsRes] =
         await Promise.all([
           fetchJson<{ posts: PetPost[] }>("/api/posts"),
           fetchJson<{ reports: OwnedReport[] }>("/api/posts/mine"),
@@ -108,6 +123,9 @@ export function PawFinderProvider({ children }: { children: ReactNode }) {
           fetchJson<{ notifications: AppNotification[] }>(
             "/api/notifications",
           ),
+          fetchJson<{ pendingSightings: PendingSighting[] }>(
+            "/api/sightings/pending",
+          ),
         ]);
       setAllPosts(postsRes.posts);
       setFeedStack(postsRes.posts);
@@ -115,6 +133,7 @@ export function PawFinderProvider({ children }: { children: ReactNode }) {
       setPendingMatch(pendingRes.pendingMatch);
       setEncounterMatch(encounterRes.encounterMatch);
       setNotifications(notifRes.notifications);
+      setPendingSightings(sightingsRes.pendingSightings);
     } finally {
       setIsLoading(false);
     }
@@ -130,6 +149,7 @@ export function PawFinderProvider({ children }: { children: ReactNode }) {
         setFeedStack([]);
         setOwnedReports([]);
         setPendingMatch(null);
+        setPendingSightings([]);
         setEncounterMatch(null);
         setNotifications([]);
       }
@@ -143,14 +163,32 @@ export function PawFinderProvider({ children }: { children: ReactNode }) {
       setFeedStack((prev) => prev.filter((p) => p.id !== postId));
       if (direction === "right") {
         try {
-          await fetchJson("/api/matches", {
+          const res = await fetch("/api/matches", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ targetPostId: postId }),
           });
+          const data = (await res.json().catch(() => ({}))) as {
+            error?: string;
+            needsChoice?: boolean;
+            targetLostPostId?: string;
+            targetName?: string;
+            ok?: boolean;
+          };
+          if (res.ok && data.needsChoice && data.targetLostPostId) {
+            setPuedeSerChoice({
+              targetLostPostId: data.targetLostPostId,
+              targetName: data.targetName || "esta mascota",
+            });
+            setChoiceOpen(true);
+            return;
+          }
+          if (!res.ok) {
+            throw new Error(data.error || "Error de red");
+          }
           await refreshAll();
         } catch {
-          /* usuario puede no tener aviso complementario */
+          /* error de red u otros casos sin opción intermedia */
         }
       }
     },
@@ -169,6 +207,18 @@ export function PawFinderProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify(draft),
       });
       setLastPublishSuccess(true);
+      await refreshAll();
+    },
+    [refreshAll],
+  );
+
+  const publishSighting = useCallback(
+    async (draft: SightingDraft) => {
+      await fetchJson("/api/sightings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(draft),
+      });
       await refreshAll();
     },
     [refreshAll],
@@ -228,6 +278,34 @@ export function PawFinderProvider({ children }: { children: ReactNode }) {
     setPendingMatch(null);
     await refreshAll();
   }, [pendingMatch, refreshAll]);
+
+  const contactSighting = useCallback(
+    async (sightingId: string) => {
+      const data = await fetchJson<{
+        contactPhone: string;
+        contactName: string;
+      }>(`/api/sightings/${sightingId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "contact" }),
+      });
+      await refreshAll();
+      return data;
+    },
+    [refreshAll],
+  );
+
+  const dismissSighting = useCallback(
+    async (sightingId: string) => {
+      await fetchJson(`/api/sightings/${sightingId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "dismiss" }),
+      });
+      await refreshAll();
+    },
+    [refreshAll],
+  );
 
   const completeEncounterAtHome = useCallback(async () => {
     if (!encounterMatch) return;
@@ -319,13 +397,17 @@ export function PawFinderProvider({ children }: { children: ReactNode }) {
       swipeCard,
       resetFeed,
       publishPost,
+      publishSighting,
       ownedReports,
       updateReportStatus,
       updateOwnedReport,
       pendingMatch,
+      pendingSightings,
       restoreDemoMatch,
       beginEncounterAfterConfirm,
       rejectMatch,
+      contactSighting,
+      dismissSighting,
       encounterMatch,
       encounterResult,
       completeEncounterAtHome,
@@ -350,13 +432,17 @@ export function PawFinderProvider({ children }: { children: ReactNode }) {
       swipeCard,
       resetFeed,
       publishPost,
+      publishSighting,
       ownedReports,
       updateReportStatus,
       updateOwnedReport,
       pendingMatch,
+      pendingSightings,
       restoreDemoMatch,
       beginEncounterAfterConfirm,
       rejectMatch,
+      contactSighting,
+      dismissSighting,
       encounterMatch,
       encounterResult,
       completeEncounterAtHome,
@@ -373,7 +459,17 @@ export function PawFinderProvider({ children }: { children: ReactNode }) {
   );
 
   return (
-    <PawFinderContext.Provider value={value}>{children}</PawFinderContext.Provider>
+    <PawFinderContext.Provider value={value}>
+      {children}
+      <PuedeSerChoiceSheet
+        choice={puedeSerChoice}
+        open={choiceOpen}
+        onOpenChange={(open) => {
+          setChoiceOpen(open);
+          if (!open) setPuedeSerChoice(null);
+        }}
+      />
+    </PawFinderContext.Provider>
   );
 }
 
