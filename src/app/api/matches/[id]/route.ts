@@ -2,6 +2,7 @@ import { MatchStatus, ReportStatus } from "@prisma/client";
 import { requireUserId } from "@/lib/api-auth";
 import { deleteCloudinaryImage } from "@/lib/cloudinary";
 import { prisma } from "@/lib/prisma";
+import { dismissSightingsForPost } from "@/lib/sightings";
 
 export async function PATCH(
   request: Request,
@@ -132,6 +133,7 @@ export async function PATCH(
         where: { id: post.id },
         data: { status: ReportStatus.RESOLVED, imageUrl: post.imageUrl },
       });
+      await dismissSightingsForPost(post.id);
     }
 
     await prisma.notification.createMany({

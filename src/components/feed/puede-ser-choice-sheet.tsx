@@ -32,7 +32,7 @@ export function PuedeSerChoiceSheet({ choice, open, onOpenChange }: Props) {
   const goSighting = () => {
     onOpenChange(false);
     router.push(
-      `/publicar/avistamiento?lostPostId=${encodeURIComponent(choice.targetLostPostId)}`,
+      `/publicar/avistamiento?lostPostId=${encodeURIComponent(choice.targetLostPostId)}&name=${encodeURIComponent(choice.targetName)}`,
     );
   };
 

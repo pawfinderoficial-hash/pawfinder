@@ -106,6 +106,19 @@ export function PawFinderProvider({ children }: { children: ReactNode }) {
   );
   const [choiceOpen, setChoiceOpen] = useState(false);
 
+  const restoreFeedPost = useCallback(
+    (postId: string) => {
+      const post = allPosts.find((candidate) => candidate.id === postId);
+      if (!post) return;
+      setFeedStack((current) =>
+        current.some((candidate) => candidate.id === postId)
+          ? current
+          : [post, ...current],
+      );
+    },
+    [allPosts],
+  );
+
   const refreshAll = useCallback(async () => {
     if (status !== "authenticated") return;
     setIsLoading(true);
@@ -188,11 +201,11 @@ export function PawFinderProvider({ children }: { children: ReactNode }) {
           }
           await refreshAll();
         } catch {
-          /* error de red u otros casos sin opción intermedia */
+          restoreFeedPost(postId);
         }
       }
     },
-    [refreshAll],
+    [refreshAll, restoreFeedPost],
   );
 
   const resetFeed = useCallback(() => {
@@ -466,7 +479,12 @@ export function PawFinderProvider({ children }: { children: ReactNode }) {
         open={choiceOpen}
         onOpenChange={(open) => {
           setChoiceOpen(open);
-          if (!open) setPuedeSerChoice(null);
+          if (!open) {
+            if (puedeSerChoice) {
+              restoreFeedPost(puedeSerChoice.targetLostPostId);
+            }
+            setPuedeSerChoice(null);
+          }
         }}
       />
     </PawFinderContext.Provider>

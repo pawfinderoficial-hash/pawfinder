@@ -1,4 +1,4 @@
-import { SightingStatus } from "@prisma/client";
+import { ReportStatus, SightingStatus } from "@prisma/client";
 import { requireUserId } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
 
@@ -10,7 +10,7 @@ export async function GET() {
   const rows = await prisma.sighting.findMany({
     where: {
       status: { in: [SightingStatus.OPEN, SightingStatus.CONTACT_SHARED] },
-      lostPost: { userId },
+      lostPost: { userId, status: ReportStatus.ACTIVE },
     },
     include: { lostPost: true, reporter: true },
     orderBy: { createdAt: "desc" },

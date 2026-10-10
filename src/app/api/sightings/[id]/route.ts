@@ -1,5 +1,6 @@
 import { SightingStatus } from "@prisma/client";
 import { requireUserId } from "@/lib/api-auth";
+import { deleteCloudinaryImage } from "@/lib/cloudinary";
 import { prisma } from "@/lib/prisma";
 
 export async function PATCH(
@@ -41,21 +42,38 @@ export async function PATCH(
       });
     }
 
-    await prisma.sighting.update({
-      where: { id },
-      data: { status: SightingStatus.CONTACT_SHARED },
+    const transitioned = await prisma.$transaction(async (tx) => {
+      const update = await tx.sighting.updateMany({
+        where: { id, status: SightingStatus.OPEN },
+        data: { status: SightingStatus.CONTACT_SHARED },
+      });
+      if (update.count === 0) return false;
+
+      await tx.notification.create({
+        data: {
+          userId: sighting.reporterId,
+          type: "SIGHTING",
+          title: "El dueño quiere hablarte",
+          body: `Quien busca a ${sighting.lostPost.name} pidió tu contacto. Te puede escribir por WhatsApp.`,
+          sightingId: id,
+          postId: sighting.lostPostId,
+        },
+      });
+      return true;
     });
 
-    await prisma.notification.create({
-      data: {
-        userId: sighting.reporterId,
-        type: "SIGHTING",
-        title: "El dueño quiere hablarte",
-        body: `Quien busca a ${sighting.lostPost.name} pidió tu contacto. Te puede escribir por WhatsApp.`,
-        sightingId: id,
-        postId: sighting.lostPostId,
-      },
-    });
+    if (!transitioned) {
+      const current = await prisma.sighting.findUnique({
+        where: { id },
+        select: { status: true },
+      });
+      if (current?.status === SightingStatus.DISMISSED) {
+        return Response.json(
+          { error: "Este avistamiento ya fue descartado" },
+          { status: 409 },
+        );
+      }
+    }
 
     return Response.json({
       ok: true,
@@ -68,11 +86,19 @@ export async function PATCH(
     if (sighting.status === SightingStatus.DISMISSED) {
       return Response.json({ ok: true, duplicate: true });
     }
-    await prisma.sighting.update({
-      where: { id },
+    const update = await prisma.sighting.updateMany({
+      where: {
+        id,
+        status: {
+          in: [SightingStatus.OPEN, SightingStatus.CONTACT_SHARED],
+        },
+      },
       data: { status: SightingStatus.DISMISSED },
     });
-    return Response.json({ ok: true });
+    if (update.count > 0) {
+      await deleteCloudinaryImage(sighting.cloudinaryPublicId);
+    }
+    return Response.json({ ok: true, duplicate: update.count === 0 });
   }
 
   return Response.json({ error: "Acción inválida" }, { status: 400 });

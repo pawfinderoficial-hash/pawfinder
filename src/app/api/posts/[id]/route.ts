@@ -3,6 +3,7 @@ import { requireUserId } from "@/lib/api-auth";
 import { deleteCloudinaryImage } from "@/lib/cloudinary";
 import { toOwnedReport } from "@/lib/db-mappers";
 import { prisma } from "@/lib/prisma";
+import { dismissSightingsForPost } from "@/lib/sightings";
 
 const statusMap: Record<string, ReportStatus> = {
   active: ReportStatus.ACTIVE,
@@ -47,6 +48,7 @@ export async function PATCH(
 
   if (body.status === "resolved") {
     await deleteCloudinaryImage(existing.cloudinaryPublicId);
+    await dismissSightingsForPost(id);
   }
 
   const candidateCount = await prisma.match.count({

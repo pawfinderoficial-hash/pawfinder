@@ -29,7 +29,24 @@ function SightingCard({
   onDismiss: () => Promise<void>;
 }) {
   const [busy, setBusy] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
   const phone = sighting.contactPhone;
+
+  const runAction = async (action: () => Promise<void>) => {
+    setBusy(true);
+    setActionError(null);
+    try {
+      await action();
+    } catch (error) {
+      setActionError(
+        error instanceof Error
+          ? error.message
+          : "No pudimos completar la acción. Intentá de nuevo.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <article className="space-y-3 rounded-2xl border border-border/50 bg-card/90 p-4 shadow-sm">
@@ -71,6 +88,15 @@ function SightingCard({
       </div>
       <p className="text-sm leading-relaxed text-foreground/90">{sighting.note}</p>
 
+      {actionError ? (
+        <p
+          className="rounded-xl border border-destructive/30 bg-destructive/5 px-3 py-2 text-sm text-destructive"
+          role="alert"
+        >
+          {actionError}
+        </p>
+      ) : null}
+
       {phone ? (
         <div className="rounded-xl border border-primary/20 bg-primary/10 px-3 py-2.5 text-sm">
           <p className="font-medium">Teléfono del avistador</p>
@@ -100,14 +126,7 @@ function SightingCard({
           <Button
             className="pf-btn-emphasis flex-1 rounded-xl shadow-none"
             disabled={busy}
-            onClick={async () => {
-              setBusy(true);
-              try {
-                await onContact();
-              } finally {
-                setBusy(false);
-              }
-            }}
+            onClick={() => void runAction(onContact)}
           >
             <MessageCircle className="size-4" />
             Quiero hablar
@@ -117,14 +136,7 @@ function SightingCard({
           variant="outline"
           className="flex-1 rounded-xl"
           disabled={busy}
-          onClick={async () => {
-            setBusy(true);
-            try {
-              await onDismiss();
-            } finally {
-              setBusy(false);
-            }
-          }}
+          onClick={() => void runAction(onDismiss)}
         >
           Descartar
         </Button>
