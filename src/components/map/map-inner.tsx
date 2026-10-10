@@ -15,6 +15,11 @@ import type { PetPost } from "@/types/pet";
 import { MAP_DEFAULT_CENTER } from "@/lib/mock-pets";
 import { cn } from "@/lib/utils";
 import { LocateFixed, Loader2, MapPinOff } from "lucide-react";
+import {
+  clearBrowserLocation,
+  readBrowserLocation,
+  storeBrowserLocation,
+} from "@/lib/browser-location";
 
 const ARGENTINA_CENTER = { lat: -34.6, lng: -64 };
 
@@ -110,7 +115,7 @@ export function PetMapInner({
   const [userCenter, setUserCenter] = useState<{
     lat: number;
     lng: number;
-  } | null>(null);
+  } | null>(() => readBrowserLocation());
   const pickerPositionRef = useRef(pickerPosition);
   const onPickLocationRef = useRef(onPickLocation);
   const [locationStatus, setLocationStatus] =
@@ -134,8 +139,23 @@ export function PetMapInner({
     });
   }, []);
 
-  const requestLocation = useCallback(() => {
+  const requestLocation = useCallback((useCachedLocation = false) => {
     if (!geolocate) return;
+
+    const cachedLocation = useCachedLocation ? readBrowserLocation() : null;
+    if (cachedLocation) {
+      const nextCenter = {
+        lat: cachedLocation.lat,
+        lng: cachedLocation.lng,
+      };
+      setUserCenter(nextCenter);
+      setLocationStatus("located");
+      if (pickerMode && !pickerPositionRef.current) {
+        onPickLocationRef.current?.(nextCenter.lat, nextCenter.lng);
+      }
+      return;
+    }
+
     if (typeof navigator === "undefined" || !navigator.geolocation) {
       setLocationStatus("unavailable");
       return;
@@ -146,6 +166,7 @@ export function PetMapInner({
       (position) => {
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
+        storeBrowserLocation({ lat, lng, capturedAt: Date.now() });
         setUserCenter({ lat, lng });
         setLocationStatus("located");
         // Seed picker at user location only if they have not tapped yet.
@@ -154,6 +175,7 @@ export function PetMapInner({
         }
       },
       (error) => {
+        if (error.code === error.PERMISSION_DENIED) clearBrowserLocation();
         setLocationStatus(error.code === error.PERMISSION_DENIED ? "denied" : "unavailable");
       },
       { enableHighAccuracy: true, timeout: 15_000, maximumAge: 30_000 },
@@ -161,7 +183,7 @@ export function PetMapInner({
   }, [geolocate, pickerMode]);
 
   useEffect(() => {
-    const timer = window.setTimeout(requestLocation, 0);
+    const timer = window.setTimeout(() => requestLocation(true), 0);
     return () => window.clearTimeout(timer);
   }, [requestLocation]);
 
@@ -223,7 +245,7 @@ export function PetMapInner({
           {locationStatus === "located" ? (
             <button
               type="button"
-              onClick={requestLocation}
+              onClick={() => requestLocation(false)}
               className="flex size-10 items-center justify-center rounded-full border border-border/60 bg-card/95 text-primary shadow-md backdrop-blur-sm"
               title="Actualizar mi ubicación"
               aria-label="Actualizar mi ubicación"
@@ -233,7 +255,7 @@ export function PetMapInner({
           ) : (
             <button
               type="button"
-              onClick={requestLocation}
+              onClick={() => requestLocation(false)}
               disabled={locationStatus === "requesting"}
               className="flex min-h-10 items-center gap-2 rounded-xl border border-border/60 bg-card/95 px-3 py-2 text-left text-xs font-medium shadow-md backdrop-blur-sm disabled:cursor-wait"
             >

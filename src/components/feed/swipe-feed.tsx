@@ -97,9 +97,10 @@ const SwipeCard = forwardRef<
       <PetPostCard
         post={post}
         className="h-full min-h-0 border-0 shadow-none ring-0"
-        imageClassName="aspect-[4/3] w-full"
+        imageClassName="h-[clamp(11rem,28dvh,15rem)] w-full"
         priority={isTop}
-        descriptionLineClamp={5}
+        compact
+        descriptionLineClamp={2}
         imageOverlay={swipeOverlays}
       />
     </motion.article>
@@ -200,9 +201,6 @@ export function SwipeFeed() {
         onPass={() => cardRef.current?.swipe("left")}
         onLike={() => cardRef.current?.swipe("right")}
       />
-      <p className="mt-2 text-center text-xs leading-relaxed text-muted-foreground">
-        Deslizá o usá los botones · {visibleStack.length} restantes
-      </p>
     </div>
   );
 }

@@ -3,6 +3,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2, LocateFixed, MapPinCheck, MapPinOff, PawPrint } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  clearBrowserLocation,
+  readBrowserLocation,
+  storeBrowserLocation,
+} from "@/lib/browser-location";
 
 const LOCATION_ENABLED_KEY = "pawfinder:location-enabled";
 
@@ -53,19 +58,17 @@ export function LocationGate({ children }: { children: React.ReactNode }) {
     navigator.geolocation.getCurrentPosition(
       (position) => {
         rememberLocationEnabled();
-        sessionStorage.setItem(
-          "pawfinder:user-location",
-          JSON.stringify({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-            capturedAt: Date.now(),
-          }),
-        );
+        storeBrowserLocation({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+          capturedAt: Date.now(),
+        });
         setStatus("granted");
       },
       (error) => {
         if (error.code === error.PERMISSION_DENIED) {
           forgetLocationEnabled();
+          clearBrowserLocation();
         }
         setStatus(
           error.code === error.PERMISSION_DENIED ? "denied" : "unavailable",
@@ -77,6 +80,11 @@ export function LocationGate({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let timer: number | undefined;
+    if (readBrowserLocation()) {
+      timer = window.setTimeout(() => setStatus("granted"), 0);
+      return () => window.clearTimeout(timer);
+    }
+
     const locationWasEnabled = wasLocationEnabled();
     const platformTimer = window.setTimeout(
       () => setIsIos(/iPhone|iPad|iPod/i.test(navigator.userAgent)),

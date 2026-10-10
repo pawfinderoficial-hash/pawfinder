@@ -44,6 +44,7 @@ export default function FeedPage() {
           value={feedSearchQuery}
           onChange={setFeedSearchQuery}
           posts={allPosts}
+          showSuggestions={feedViewMode === "lista"}
         />
       </div>
       {feedViewMode === "swipe" ? <SwipeFeed /> : <FeedList />}

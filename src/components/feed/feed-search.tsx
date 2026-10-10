@@ -11,11 +11,13 @@ export function FeedSearch({
   onChange,
   posts,
   className,
+  showSuggestions = true,
 }: {
   value: string;
   onChange: (value: string) => void;
   posts: PetPost[];
   className?: string;
+  showSuggestions?: boolean;
 }) {
   const chips = sampleBreedFilters(posts, 3);
 
@@ -35,7 +37,7 @@ export function FeedSearch({
           aria-label="Buscar avisos"
         />
       </div>
-      {chips.length > 0 && !value ? (
+      {showSuggestions && chips.length > 0 && !value ? (
         <div className="flex flex-wrap items-center gap-1.5 px-0.5">
           <span className="text-xs text-muted-foreground">Ej. raza:</span>
           {chips.map((breed) => (
