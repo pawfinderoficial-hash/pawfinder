@@ -1,14 +1,18 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Camera, CheckCircle2, AlertCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Camera, CheckCircle2, MapPin, ShieldCheck } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { PetMap } from "@/components/map/pet-map";
+import {
+  FormErrors,
+  FormStepActions,
+  FormStepper,
+} from "@/components/publish/form-stepper";
 import { usePawFinder } from "@/context/pawfinder-context";
 import type { PetKind, PublishDraft } from "@/types/pet";
 
@@ -21,15 +25,18 @@ const DEFAULT_IMAGES: Record<PetKind, string> = {
 
 const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+const STEPS = ["Mascota", "Descripción", "Ubicación", "Revisión"] as const;
 
-const titles: Record<PetKind, { heading: string; submit: string }> = {
+const titles: Record<PetKind, { heading: string; intro: string; submit: string }> = {
   lost: {
-    heading: "Publicar mascota perdida",
-    submit: "Publicar aviso de búsqueda",
+    heading: "Mascota perdida",
+    intro: "Cargá la información necesaria para que otras personas puedan reconocerla.",
+    submit: "Publicar búsqueda",
   },
   found: {
-    heading: "Publicar mascota encontrada",
-    submit: "Publicar aviso de hallazgo",
+    heading: "Mascota encontrada",
+    intro: "Contanos cómo es y dónde la encontraste para ubicar a su familia.",
+    submit: "Publicar hallazgo",
   },
 };
 
@@ -41,8 +48,12 @@ export function PublishForm({
   targetLostPostId?: string;
 }) {
   const router = useRouter();
+  const formRef = useRef<HTMLFormElement>(null);
   const { publishPost, clearPublishSuccess } = usePawFinder();
+  const [step, setStep] = useState(0);
   const [imageUrl, setImageUrl] = useState(DEFAULT_IMAGES[kind]);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
+  const [cloudinaryPublicId, setCloudinaryPublicId] = useState<string>();
   const [name, setName] = useState("");
   const [species, setSpecies] = useState(kind === "lost" ? "Perro" : "");
   const [breed, setBreed] = useState("");
@@ -57,25 +68,56 @@ export function PublishForm({
   const [errors, setErrors] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
-  const validate = () => {
+  const meta = titles[kind];
+
+  const showStep = (nextStep: number) => {
+    setErrors([]);
+    setStep(nextStep);
+    formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const validateStep = (stepToValidate: number) => {
     const next: string[] = [];
-    if (!species.trim()) next.push("Indicá si es perro, gato u otra especie.");
-    if (!description.trim() || description.length < 20)
+
+    if (stepToValidate === 0 && !species.trim()) {
+      next.push("Indicá si es perro, gato u otra especie.");
+    }
+    if (
+      stepToValidate === 1 &&
+      (!description.trim() || description.trim().length < 20)
+    ) {
       next.push("La descripción debe tener al menos 20 caracteres.");
-    if (!locationLabel.trim()) next.push("Agregá una referencia de ubicación.");
-    if (!position) next.push("Marcá un punto en el mapa.");
-    if (!contactName.trim()) next.push("Tu nombre es obligatorio.");
-    if (!contactPhone.trim()) next.push("Un teléfono de contacto es obligatorio.");
+    }
+    if (stepToValidate === 2) {
+      if (!locationLabel.trim()) {
+        next.push("Agregá una referencia de ubicación.");
+      }
+      if (!position) next.push("Marcá un punto en el mapa.");
+    }
+    if (stepToValidate === 3) {
+      if (!contactName.trim()) next.push("Tu nombre es obligatorio.");
+      if (!contactPhone.trim()) {
+        next.push("Un teléfono de contacto es obligatorio.");
+      }
+    }
+
     setErrors(next);
     return next.length === 0;
   };
 
-  const [photoFile, setPhotoFile] = useState<File | null>(null);
-  const [cloudinaryPublicId, setCloudinaryPublicId] = useState<string | undefined>();
+  const handleNext = () => {
+    if (!validateStep(step)) return;
+    showStep(Math.min(step + 1, STEPS.length - 1));
+  };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!validate()) return;
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (step < STEPS.length - 1) {
+      handleNext();
+      return;
+    }
+    if (!validateStep(3) || !position) return;
+
     setSubmitting(true);
     try {
       let finalImageUrl = imageUrl;
@@ -104,17 +146,17 @@ export function PublishForm({
 
       const draft: PublishDraft = {
         kind,
-        name,
-        species,
-        breed,
-        description,
-        locationLabel,
-        lat: position!.lat,
-        lng: position!.lng,
+        name: name.trim(),
+        species: species.trim(),
+        breed: breed.trim(),
+        description: description.trim(),
+        locationLabel: locationLabel.trim(),
+        lat: position.lat,
+        lng: position.lng,
         imageUrl: finalImageUrl,
-        contactName,
-        contactPhone,
-        contactEmail,
+        contactName: contactName.trim(),
+        contactPhone: contactPhone.trim(),
+        contactEmail: contactEmail.trim(),
         ...(kind === "found" && targetLostPostId
           ? { targetLostPostId }
           : {}),
@@ -133,198 +175,270 @@ export function PublishForm({
     }
   };
 
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
-        setErrors(["Formato no permitido. Usá JPG, PNG o WebP."]);
-        e.target.value = "";
-        return;
-      }
-      if (file.size > MAX_IMAGE_BYTES) {
-        setErrors(["La imagen no puede superar los 5 MB."]);
-        e.target.value = "";
-        return;
-      }
-      setErrors([]);
-      setPhotoFile(file);
-      const url = URL.createObjectURL(file);
-      setImageUrl(url);
-      setCloudinaryPublicId(undefined);
+  const handlePhotoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
+      setErrors(["Formato no permitido. Usá JPG, PNG o WebP."]);
+      event.target.value = "";
+      return;
     }
+    if (file.size > MAX_IMAGE_BYTES) {
+      setErrors(["La imagen no puede superar los 5 MB."]);
+      event.target.value = "";
+      return;
+    }
+    setErrors([]);
+    setPhotoFile(file);
+    setImageUrl(URL.createObjectURL(file));
+    setCloudinaryPublicId(undefined);
   };
 
-  const meta = titles[kind];
-
   return (
-    <form onSubmit={handleSubmit} className="space-y-7 px-5 py-5">
-      <div>
-        <h2 className="font-heading text-xl font-semibold">{meta.heading}</h2>
-        <p className="text-sm text-muted-foreground">
-          {targetLostPostId && kind === "found"
-            ? "Al publicar se crea un match pendiente con el aviso de pérdida que marcaste."
-            : "La foto se sube a Cloudinary y el aviso queda guardado en la base de datos."}
-        </p>
+    <form ref={formRef} onSubmit={handleSubmit} className="space-y-6 px-5 py-5">
+      <div className="space-y-4">
+        <div>
+          <h2 className="font-heading text-xl font-semibold">{meta.heading}</h2>
+          <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
+            {targetLostPostId && kind === "found"
+              ? "Este hallazgo quedará vinculado con la mascota que marcaste."
+              : meta.intro}
+          </p>
+        </div>
+        <FormStepper steps={STEPS} currentStep={step} />
       </div>
 
-      {errors.length > 0 ? (
-        <div
-          className="flex gap-2 rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive"
-          role="alert"
-        >
-          <AlertCircle className="size-5 shrink-0" />
-          <ul className="list-inside list-disc space-y-0.5">
-            {errors.map((err) => (
-              <li key={err}>{err}</li>
-            ))}
-          </ul>
-        </div>
+      <FormErrors errors={errors} />
+
+      {step === 0 ? (
+        <section className="space-y-5" aria-labelledby="pet-step-title">
+          <div>
+            <h3 id="pet-step-title" className="font-heading text-lg font-semibold">
+              Foto e identificación
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              Una imagen clara ayuda a reconocerla más rápido.
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <div className="relative aspect-video overflow-hidden rounded-2xl border border-border/50 bg-muted shadow-sm">
+              <Image
+                src={imageUrl}
+                alt="Vista previa de la mascota"
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, 640px"
+                unoptimized={imageUrl.startsWith("blob:")}
+              />
+            </div>
+            <label className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-xl border border-border bg-background px-3 text-sm font-medium hover:bg-muted">
+              <Camera className="size-4" />
+              Cambiar foto
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                className="sr-only"
+                onChange={handlePhotoChange}
+              />
+            </label>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            {kind === "lost" ? (
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="name">Nombre de la mascota</Label>
+                <Input
+                  id="name"
+                  placeholder="Ej. Luna"
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                />
+              </div>
+            ) : null}
+            <div className="space-y-2">
+              <Label htmlFor="species">Especie</Label>
+              <Input
+                id="species"
+                placeholder="Perro, gato…"
+                value={species}
+                onChange={(event) => setSpecies(event.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="breed">Raza o aspecto</Label>
+              <Input
+                id="breed"
+                placeholder="Mestiza, siamés…"
+                value={breed}
+                onChange={(event) => setBreed(event.target.value)}
+              />
+            </div>
+          </div>
+        </section>
       ) : null}
 
-      <div className="space-y-2">
-        <Label>Foto</Label>
-        <div className="relative aspect-video overflow-hidden rounded-2xl border border-border/50 bg-muted shadow-sm">
-          <Image
-            src={imageUrl}
-            alt="Vista previa"
-            fill
-            className="object-cover"
-            sizes="(max-width: 768px) 100vw, 640px"
-            unoptimized={imageUrl.startsWith("blob:")}
-          />
-        </div>
-        <label
-          className="inline-flex h-7 cursor-pointer items-center gap-1 rounded-lg border border-border bg-background px-2.5 text-sm font-medium hover:bg-muted"
-        >
-          <Camera className="size-4" />
-          Cambiar foto (ejemplo local)
-          <input
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            className="sr-only"
-            onChange={handlePhotoChange}
-          />
-        </label>
-      </div>
+      {step === 1 ? (
+        <section className="space-y-5" aria-labelledby="description-step-title">
+          <div>
+            <h3 id="description-step-title" className="font-heading text-lg font-semibold">
+              ¿Cómo podemos reconocerla?
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              Sumá señas particulares y contá brevemente qué pasó.
+            </p>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="description">Descripción</Label>
+            <Textarea
+              id="description"
+              rows={7}
+              placeholder="Ej. Pelaje marrón, collar rojo, tiene una mancha blanca en el pecho…"
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+              autoFocus
+            />
+            <p className="text-right text-xs text-muted-foreground">
+              {description.trim().length}/20 caracteres mínimos
+            </p>
+          </div>
+        </section>
+      ) : null}
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        {kind === "lost" ? (
-          <div className="space-y-2 sm:col-span-2">
-            <Label htmlFor="name">Nombre de la mascota</Label>
+      {step === 2 ? (
+        <section className="space-y-5" aria-labelledby="location-step-title">
+          <div>
+            <h3 id="location-step-title" className="font-heading text-lg font-semibold">
+              ¿Dónde fue?
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              Usamos tu ubicación como punto inicial. Podés ajustar el marcador.
+            </p>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="locationLabel">Zona o referencia</Label>
             <Input
-              id="name"
-              placeholder="Ej: Luna"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              id="locationLabel"
+              placeholder="Barrio, plaza o esquina cercana"
+              value={locationLabel}
+              onChange={(event) => setLocationLabel(event.target.value)}
             />
           </div>
-        ) : null}
-        <div className="space-y-2">
-          <Label htmlFor="species">Especie</Label>
-          <Input
-            id="species"
-            placeholder="Perro, gato…"
-            value={species}
-            onChange={(e) => setSpecies(e.target.value)}
-            required
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="breed">Raza</Label>
-          <Input
-            id="breed"
-            placeholder="Ej. Mestiza, Siamés, color o collar…"
-            value={breed}
-            onChange={(e) => setBreed(e.target.value)}
-          />
-        </div>
-      </div>
+          <div className="space-y-2">
+            <Label>Marcá el punto en el mapa</Label>
+            <PetMap
+              posts={[]}
+              pickerMode
+              pickerPosition={position}
+              onPickLocation={(lat, lng) => setPosition({ lat, lng })}
+              heightClass="h-[min(48vh,360px)]"
+            />
+            {position ? (
+              <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <CheckCircle2 className="size-3.5 text-primary" />
+                Ubicación seleccionada
+              </p>
+            ) : (
+              <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                <MapPin className="size-3.5" />
+                Tocá el mapa para marcar la ubicación
+              </p>
+            )}
+            <p className="text-xs leading-relaxed text-muted-foreground">
+              El aviso público desplaza levemente el punto para proteger la
+              ubicación exacta.
+            </p>
+          </div>
+        </section>
+      ) : null}
 
-      <div className="space-y-2">
-        <Label htmlFor="description">Descripción</Label>
-        <Textarea
-          id="description"
-          rows={4}
-          placeholder="Contá qué pasó, señas particulares, horario aproximado…"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-        />
-      </div>
+      {step === 3 ? (
+        <section className="space-y-6" aria-labelledby="review-step-title">
+          <div>
+            <h3 id="review-step-title" className="font-heading text-lg font-semibold">
+              Contacto y revisión
+            </h3>
+            <p className="text-sm text-muted-foreground">
+              Tus datos solo se comparten cuando corresponde iniciar el contacto.
+            </p>
+          </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="locationLabel">Zona aproximada visible</Label>
-        <Input
-          id="locationLabel"
-          placeholder="Barrio o punto de referencia, sin domicilio exacto"
-          value={locationLabel}
-          onChange={(e) => setLocationLabel(e.target.value)}
-        />
-      </div>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="contactName">Tu nombre</Label>
+              <Input
+                id="contactName"
+                value={contactName}
+                onChange={(event) => setContactName(event.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="contactPhone">Teléfono / WhatsApp</Label>
+              <Input
+                id="contactPhone"
+                type="tel"
+                inputMode="tel"
+                placeholder="+54 376…"
+                value={contactPhone}
+                onChange={(event) => setContactPhone(event.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="contactEmail">Email (opcional)</Label>
+              <Input
+                id="contactEmail"
+                type="email"
+                inputMode="email"
+                value={contactEmail}
+                onChange={(event) => setContactEmail(event.target.value)}
+              />
+            </div>
+          </div>
 
-      <div className="space-y-2">
-        <Label>Ubicación en el mapa</Label>
-        <PetMap
-          posts={[]}
-          pickerMode
-          pickerPosition={position}
-          onPickLocation={(lat, lng) => setPosition({ lat, lng })}
-          heightClass="h-56"
-        />
-        {position ? (
-          <p className="flex items-center gap-1 text-xs text-muted-foreground">
-            <CheckCircle2 className="size-3.5 text-primary" />
-            Punto marcado: {position.lat.toFixed(4)}, {position.lng.toFixed(4)}
-          </p>
-        ) : null}
-        <p className="text-xs leading-relaxed text-muted-foreground">
-          El mapa publico desplaza levemente el punto. La ubicacion exacta queda
-          protegida y solo se usa para buscar coincidencias cercanas.
-        </p>
-      </div>
+          <div className="border-t border-border/70 pt-5">
+            <div className="flex gap-4">
+              <div className="relative size-20 shrink-0 overflow-hidden rounded-xl bg-muted">
+                <Image
+                  src={imageUrl}
+                  alt="Foto del aviso"
+                  fill
+                  className="object-cover"
+                  sizes="80px"
+                  unoptimized={imageUrl.startsWith("blob:")}
+                />
+              </div>
+              <div className="min-w-0 space-y-1">
+                <p className="font-semibold text-foreground">
+                  {name.trim() || (kind === "found" ? "Mascota encontrada" : "Mascota")}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {[species.trim(), breed.trim()].filter(Boolean).join(" · ")}
+                </p>
+                <p className="line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+                  {description}
+                </p>
+              </div>
+            </div>
+            <p className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
+              <MapPin className="size-4 shrink-0 text-primary" />
+              {locationLabel}
+            </p>
+            <p className="mt-3 flex items-start gap-2 text-xs leading-relaxed text-muted-foreground">
+              <ShieldCheck className="mt-0.5 size-4 shrink-0 text-primary" />
+              La ubicación exacta y tus datos de contacto quedan protegidos.
+            </p>
+          </div>
+        </section>
+      ) : null}
 
-      <div className="pf-surface-soft space-y-4 rounded-2xl p-4">
-        <h3 className="font-semibold">Contacto</h3>
-        <p className="text-xs leading-relaxed text-muted-foreground">
-          Estos datos no aparecen en el aviso publico. Se habilitan cuando ambas
-          partes confirman una posible coincidencia.
-        </p>
-        <div className="space-y-2">
-          <Label htmlFor="contactName">Tu nombre</Label>
-          <Input
-            id="contactName"
-            value={contactName}
-            onChange={(e) => setContactName(e.target.value)}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="contactPhone">Teléfono / WhatsApp</Label>
-          <Input
-            id="contactPhone"
-            type="tel"
-            placeholder="+54 11 …"
-            value={contactPhone}
-            onChange={(e) => setContactPhone(e.target.value)}
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="contactEmail">Email (opcional)</Label>
-          <Input
-            id="contactEmail"
-            type="email"
-            value={contactEmail}
-            onChange={(e) => setContactEmail(e.target.value)}
-          />
-        </div>
-      </div>
-
-      <Button
-        type="submit"
-        className="pf-btn-emphasis w-full rounded-xl shadow-none"
-        size="lg"
-        disabled={submitting}
-      >
-        {submitting ? "Publicando…" : meta.submit}
-      </Button>
+      <FormStepActions
+        currentStep={step}
+        totalSteps={STEPS.length}
+        onBack={() => showStep(step - 1)}
+        onNext={handleNext}
+        submitting={submitting}
+        submitLabel={meta.submit}
+      />
     </form>
   );
 }

@@ -14,6 +14,7 @@ type LocationGateStatus =
 
 export function LocationGate({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<LocationGateStatus>("checking");
+  const [isIos, setIsIos] = useState(false);
   const permissionRef = useRef<PermissionStatus | null>(null);
 
   const requestLocation = useCallback(() => {
@@ -46,6 +47,10 @@ export function LocationGate({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let timer: number | undefined;
+    const platformTimer = window.setTimeout(
+      () => setIsIos(/iPhone|iPad|iPod/i.test(navigator.userAgent)),
+      0,
+    );
 
     if (navigator.permissions) {
       void navigator.permissions
@@ -70,6 +75,7 @@ export function LocationGate({ children }: { children: React.ReactNode }) {
     }
 
     return () => {
+      window.clearTimeout(platformTimer);
       if (timer !== undefined) window.clearTimeout(timer);
       if (permissionRef.current) permissionRef.current.onchange = null;
     };
@@ -122,7 +128,9 @@ export function LocationGate({ children }: { children: React.ReactNode }) {
               </p>
               <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
                 {isDenied
-                  ? "Abrí el icono junto a la dirección del sitio, entrá en permisos y cambiá Ubicación a Permitir."
+                  ? isIos
+                    ? "En Ajustes del iPhone, abrí Privacidad y seguridad > Localización > Safari Websites o Chrome, y elegí Al usar la app."
+                    : "Abrí el icono junto a la dirección del sitio, entrá en permisos y cambiá Ubicación a Permitir."
                   : status === "unavailable"
                     ? "Abrí PawFinder desde http://localhost:43123 y verificá que la ubicación esté habilitada en el navegador y en tu computadora."
                     : status === "ready"
