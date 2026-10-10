@@ -30,7 +30,7 @@ export function BottomNav() {
       className="fixed bottom-0 left-0 right-0 z-50 border-t border-border/50 bg-card/88 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl"
       aria-label="Navegación principal"
     >
-      <div className="mx-auto flex max-w-lg items-stretch justify-around px-2 py-1.5 md:max-w-2xl">
+      <div className="mx-auto grid h-16 max-w-lg grid-cols-4 items-stretch px-2 md:max-w-2xl">
         {links.map(({ href, label, icon: Icon }) => {
           const active = pathname === href || pathname.startsWith(`${href}/`);
           const showBadge =
@@ -41,7 +41,7 @@ export function BottomNav() {
               key={href}
               href={href}
               className={cn(
-                "relative flex min-w-0 flex-1 flex-col items-center gap-0.5 rounded-2xl px-2 py-2 text-[0.7rem] font-semibold transition-colors",
+                "relative flex h-16 min-w-0 flex-col items-center justify-center gap-0.5 rounded-2xl px-1 text-[0.7rem] font-semibold transition-colors",
                 active
                   ? "text-primary"
                   : "text-muted-foreground hover:text-foreground",
@@ -67,7 +67,7 @@ export function BottomNav() {
                   />
                 ) : null}
               </span>
-              <span className="relative">{label}</span>
+              <span className="relative whitespace-nowrap">{label}</span>
             </Link>
           );
         })}

@@ -85,6 +85,21 @@ export interface SightingDraft {
   contactPhone: string;
 }
 
+export interface OwnedSighting {
+  id: string;
+  status: "open" | "contact_shared" | "dismissed";
+  note: string;
+  locationLabel: string;
+  seenAt: string | null;
+  imageUrl: string | null;
+  createdAt: string;
+  lostPost: {
+    id: string;
+    name: string;
+    imageUrl: string;
+  };
+}
+
 export interface OwnedReport extends PetPost {
   status: ReportStatus;
   candidateCount: number;

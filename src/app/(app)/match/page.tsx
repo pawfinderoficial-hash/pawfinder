@@ -169,7 +169,7 @@ export default function MatchPage() {
   if (!hasMatch && !hasSightings) {
     return (
       <>
-        <AppHeader title="Match" subtitle="Posibles reuniones y avistamientos" />
+        <AppHeader title="Match" />
         <div className="flex flex-col items-center px-6 py-16 text-center">
           <div className="pf-empty-icon mb-4">
             <HeartHandshake className="size-8" />
@@ -194,14 +194,7 @@ export default function MatchPage() {
 
   return (
     <>
-      <AppHeader
-        title={hasMatch ? "¡Posible match!" : "Avistamientos"}
-        subtitle={
-          hasMatch
-            ? `Mensaje de ${pendingMatch!.finderName}`
-            : "Alguien cree haber visto a tu mascota"
-        }
-      />
+      <AppHeader title={hasMatch ? "¡Posible match!" : "Avistamientos"} />
       <div className="space-y-6 px-4 py-4">
         {hasMatch ? (
           <section className="space-y-5">

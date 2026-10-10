@@ -17,7 +17,7 @@ function EncontradaContent() {
 export default function PublicarEncontradaPage() {
   return (
     <>
-      <AppHeader title="Publicar" subtitle="Mascota encontrada" />
+      <AppHeader title="Publicar" />
       <Suspense
         fallback={
           <p className="px-5 py-8 text-sm text-muted-foreground">Cargando…</p>

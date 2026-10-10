@@ -7,7 +7,7 @@ import { LocationGate } from "@/components/location/location-gate";
 export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <LocationGate>
-      <div className="pf-atmosphere flex min-h-full flex-col">
+      <div className="pf-atmosphere flex min-h-dvh flex-col">
         <main className="mx-auto w-full max-w-lg flex-1 pb-24 md:max-w-2xl">
           <PageTransition>{children}</PageTransition>
         </main>

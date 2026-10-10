@@ -24,7 +24,7 @@ function AvistamientoContent() {
 export default function PublicarAvistamientoPage() {
   return (
     <>
-      <AppHeader title="Avistamiento" subtitle="La vi pero no pude agarrarla" />
+      <AppHeader title="Avistamiento" />
       <Suspense
         fallback={
           <p className="px-5 py-8 text-sm text-muted-foreground">Cargando…</p>

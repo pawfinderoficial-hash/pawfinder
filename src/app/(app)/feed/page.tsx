@@ -28,7 +28,7 @@ export default function FeedPage() {
 
   return (
     <>
-      <AppHeader title="PawFinder" compact />
+      <AppHeader title="PawFinder" />
       {lastPublishSuccess ? (
         <div
           className="mx-4 mt-3 rounded-2xl border border-primary/15 bg-primary/10 px-3 py-2.5 text-center text-sm text-foreground shadow-sm backdrop-blur-sm"

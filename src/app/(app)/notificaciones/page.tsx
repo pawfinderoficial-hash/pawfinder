@@ -92,7 +92,6 @@ export default function NotificacionesPage() {
     <>
       <AppHeader
         title="Notificaciones"
-        subtitle="Matches, avistamientos y novedades de auspiciantes"
         showNotificationBell={false}
       />
       <div className="space-y-4 px-4 py-4">

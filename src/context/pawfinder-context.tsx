@@ -14,6 +14,7 @@ import type { AppNotification } from "@/lib/mock-notifications";
 import { MOCK_MEETING_POINTS, type MeetingPoint } from "@/lib/mock-meeting-points";
 import type {
   OwnedReport,
+  OwnedSighting,
   PendingMatch,
   PendingSighting,
   PetPost,
@@ -44,6 +45,7 @@ interface PawFinderContextValue {
   publishPost: (draft: PublishDraft & { cloudinaryPublicId?: string }) => Promise<void>;
   publishSighting: (draft: SightingDraft) => Promise<void>;
   ownedReports: OwnedReport[];
+  ownedSightings: OwnedSighting[];
   updateReportStatus: (reportId: string, status: ReportStatus) => Promise<void>;
   updateOwnedReport: (
     reportId: string,
@@ -88,6 +90,7 @@ export function PawFinderProvider({ children }: { children: ReactNode }) {
   const [allPosts, setAllPosts] = useState<PetPost[]>([]);
   const [feedStack, setFeedStack] = useState<PetPost[]>([]);
   const [ownedReports, setOwnedReports] = useState<OwnedReport[]>([]);
+  const [ownedSightings, setOwnedSightings] = useState<OwnedSighting[]>([]);
   const [pendingMatch, setPendingMatch] = useState<PendingMatch | null>(null);
   const [pendingSightings, setPendingSightings] = useState<PendingSighting[]>(
     [],
@@ -123,10 +126,18 @@ export function PawFinderProvider({ children }: { children: ReactNode }) {
     if (status !== "authenticated") return;
     setIsLoading(true);
     try {
-      const [postsRes, mineRes, pendingRes, encounterRes, notifRes, sightingsRes] =
-        await Promise.all([
+      const [
+        postsRes,
+        mineRes,
+        ownSightingsRes,
+        pendingRes,
+        encounterRes,
+        notifRes,
+        sightingsRes,
+      ] = await Promise.all([
           fetchJson<{ posts: PetPost[] }>("/api/posts"),
           fetchJson<{ reports: OwnedReport[] }>("/api/posts/mine"),
+          fetchJson<{ sightings: OwnedSighting[] }>("/api/sightings/mine"),
           fetchJson<{ pendingMatch: PendingMatch | null }>(
             "/api/matches/pending",
           ),
@@ -143,6 +154,7 @@ export function PawFinderProvider({ children }: { children: ReactNode }) {
       setAllPosts(postsRes.posts);
       setFeedStack(postsRes.posts);
       setOwnedReports(mineRes.reports);
+      setOwnedSightings(ownSightingsRes.sightings);
       setPendingMatch(pendingRes.pendingMatch);
       setEncounterMatch(encounterRes.encounterMatch);
       setNotifications(notifRes.notifications);
@@ -161,6 +173,7 @@ export function PawFinderProvider({ children }: { children: ReactNode }) {
         setAllPosts([]);
         setFeedStack([]);
         setOwnedReports([]);
+        setOwnedSightings([]);
         setPendingMatch(null);
         setPendingSightings([]);
         setEncounterMatch(null);
@@ -412,6 +425,7 @@ export function PawFinderProvider({ children }: { children: ReactNode }) {
       publishPost,
       publishSighting,
       ownedReports,
+      ownedSightings,
       updateReportStatus,
       updateOwnedReport,
       pendingMatch,
@@ -447,6 +461,7 @@ export function PawFinderProvider({ children }: { children: ReactNode }) {
       publishPost,
       publishSighting,
       ownedReports,
+      ownedSightings,
       updateReportStatus,
       updateOwnedReport,
       pendingMatch,

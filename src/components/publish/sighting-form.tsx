@@ -234,9 +234,6 @@ export function SightingForm({ lostPostId, lostPostName }: Props) {
             <h3 id="sighting-location-title" className="font-heading text-lg font-semibold">
               ¿Dónde la viste?
             </h3>
-            <p className="text-sm text-muted-foreground">
-              Usamos tu ubicación como punto inicial. Ajustala si fue en otro lugar.
-            </p>
           </div>
           <div className="space-y-2">
             <Label htmlFor="locationLabel">Zona o referencia</Label>

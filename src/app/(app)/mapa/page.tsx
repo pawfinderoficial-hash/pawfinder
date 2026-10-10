@@ -25,10 +25,7 @@ export default function MapaPage() {
 
   return (
     <>
-      <AppHeader
-        title="Mapa"
-        subtitle="Zonas aproximadas de mascotas perdidas y encontradas"
-      />
+      <AppHeader title="Mapa" />
       {reportSent ? (
         <div className="mx-4 mt-3 rounded-xl border border-primary/15 bg-primary/10 px-3 py-2 text-sm" role="status">
           Reporte enviado al equipo de moderacion.

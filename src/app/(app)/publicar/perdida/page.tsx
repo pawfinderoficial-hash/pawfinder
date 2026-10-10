@@ -4,7 +4,7 @@ import { PublishForm } from "@/components/publish/publish-form";
 export default function PublicarPerdidaPage() {
   return (
     <>
-      <AppHeader title="Publicar" subtitle="Mascota perdida" />
+      <AppHeader title="Publicar" />
       <PublishForm kind="lost" />
     </>
   );

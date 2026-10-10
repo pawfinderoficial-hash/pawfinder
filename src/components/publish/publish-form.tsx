@@ -311,9 +311,6 @@ export function PublishForm({
             <h3 id="location-step-title" className="font-heading text-lg font-semibold">
               ¿Dónde fue?
             </h3>
-            <p className="text-sm text-muted-foreground">
-              Usamos tu ubicación como punto inicial. Podés ajustar el marcador.
-            </p>
           </div>
           <div className="space-y-2">
             <Label htmlFor="locationLabel">Zona o referencia</Label>

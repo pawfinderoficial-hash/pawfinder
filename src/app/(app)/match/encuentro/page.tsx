@@ -45,10 +45,7 @@ export default function MatchEncuentroPage() {
 
     return (
       <>
-        <AppHeader
-          title="Encuentro acordado"
-          subtitle="Demo — sin envío real de mensajes"
-        />
+        <AppHeader title="Encuentro acordado" />
         <div className="space-y-5 px-4 py-6">
           <div className="rounded-2xl border border-primary/20 bg-primary/10 p-5 text-center">
             <CheckCircle2 className="mx-auto size-10 text-primary" />
@@ -102,10 +99,7 @@ export default function MatchEncuentroPage() {
 
   return (
     <>
-      <AppHeader
-        title="Punto de encuentro"
-        subtitle={`Con ${encounterMatch.finderName} — elegí cómo reunirse`}
-      />
+      <AppHeader title="Punto de encuentro" />
       <div className="space-y-5 px-4 py-4">
         <p className="text-sm leading-relaxed text-muted-foreground">
           Elegí un lugar seguro. Los puntos fijos son veterinarias y locales
