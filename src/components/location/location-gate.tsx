@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 
 type LocationGateStatus =
   | "checking"
+  | "ready"
   | "requesting"
   | "granted"
   | "denied"
@@ -44,29 +45,41 @@ export function LocationGate({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    const timer = window.setTimeout(requestLocation, 0);
+    let timer: number | undefined;
 
     if (navigator.permissions) {
       void navigator.permissions
         .query({ name: "geolocation" })
         .then((permission) => {
           permissionRef.current = permission;
-          permission.onchange = requestLocation;
+          const handlePermission = () => {
+            if (permission.state === "granted") {
+              requestLocation();
+              return;
+            }
+            setStatus(permission.state === "denied" ? "denied" : "ready");
+          };
+          permission.onchange = handlePermission;
+          handlePermission();
         })
         .catch(() => {
-          // Some browsers expose geolocation without exposing its permission state.
+          timer = window.setTimeout(() => setStatus("ready"), 0);
         });
+    } else {
+      timer = window.setTimeout(() => setStatus("ready"), 0);
     }
 
     return () => {
-      window.clearTimeout(timer);
+      if (timer !== undefined) window.clearTimeout(timer);
       if (permissionRef.current) permissionRef.current.onchange = null;
     };
   }, [requestLocation]);
 
   if (status === "granted") return children;
 
-  const isBusy = status === "checking" || status === "requesting";
+  const isChecking = status === "checking";
+  const isRequesting = status === "requesting";
+  const isBusy = isChecking || isRequesting;
   const isDenied = status === "denied";
 
   return (
@@ -97,18 +110,24 @@ export function LocationGate({ children }: { children: React.ReactNode }) {
             </div>
             <div className="min-w-0">
               <p className="text-sm font-semibold text-foreground">
-                {isBusy
-                  ? "Esperando permiso"
+                {isChecking
+                  ? "Comprobando el permiso"
+                  : isRequesting
+                    ? "Esperando tu confirmación"
                   : isDenied
                     ? "La ubicación está bloqueada"
-                    : "No pudimos obtener tu ubicación"}
+                    : status === "ready"
+                      ? "Activá la ubicación"
+                      : "No pudimos obtener tu ubicación"}
               </p>
               <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
                 {isDenied
                   ? "Abrí el icono junto a la dirección del sitio, entrá en permisos y cambiá Ubicación a Permitir."
                   : status === "unavailable"
                     ? "Abrí PawFinder desde http://localhost:43123 y verificá que la ubicación esté habilitada en el navegador y en tu computadora."
-                    : "Aceptá la solicitud de ubicación que muestra el navegador."}
+                    : status === "ready"
+                      ? "Tocá el botón y el navegador te preguntará si querés compartirla."
+                      : "Aceptá la solicitud de ubicación que muestra el navegador."}
               </p>
             </div>
           </div>
@@ -126,7 +145,11 @@ export function LocationGate({ children }: { children: React.ReactNode }) {
           ) : (
             <LocateFixed className="size-4" />
           )}
-          {isBusy ? "Solicitando ubicación…" : "Volver a intentar"}
+          {isBusy
+            ? "Solicitando ubicación…"
+            : status === "ready"
+              ? "Permitir ubicación"
+              : "Volver a intentar"}
         </Button>
       </section>
     </main>
