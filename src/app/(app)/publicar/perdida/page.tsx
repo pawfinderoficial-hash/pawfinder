@@ -1,10 +1,10 @@
-import { AppHeader } from "@/components/layout/app-header";
+import { FlowHeader } from "@/components/layout/flow-header";
 import { PublishForm } from "@/components/publish/publish-form";
 
 export default function PublicarPerdidaPage() {
   return (
     <>
-      <AppHeader title="Publicar" />
+      <FlowHeader title="Mascota perdida" />
       <PublishForm kind="lost" />
     </>
   );

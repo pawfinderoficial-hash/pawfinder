@@ -57,35 +57,37 @@ export function FormStepActions({
   const isLastStep = currentStep === totalSteps - 1;
 
   return (
-    <div className="sticky bottom-20 z-20 -mx-5 flex gap-2 border-t border-border/60 bg-background/95 px-5 py-3 backdrop-blur-xl">
-      {currentStep > 0 ? (
-        <Button
-          type="button"
-          variant="outline"
-          size="lg"
-          className="shrink-0"
-          onClick={onBack}
-          disabled={submitting}
-        >
-          <ArrowLeft className="size-4" />
-          Atrás
-        </Button>
-      ) : null}
-      {isLastStep ? (
-        <Button
-          type="submit"
-          size="lg"
-          className="pf-btn-emphasis flex-1 shadow-none"
-          disabled={submitting}
-        >
-          {submitting ? submittingLabel : submitLabel}
-        </Button>
-      ) : (
-        <Button type="button" size="lg" className="flex-1" onClick={onNext}>
-          Continuar
-          <ArrowRight className="size-4" />
-        </Button>
-      )}
+    <div className="pf-wizard-actions fixed inset-x-0 bottom-0 z-50 border-t border-border/60 bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl">
+      <div className="mx-auto flex max-w-lg gap-2 px-4 py-3 md:max-w-2xl">
+        {currentStep > 0 ? (
+          <Button
+            type="button"
+            variant="outline"
+            size="lg"
+            className="shrink-0"
+            onClick={onBack}
+            disabled={submitting}
+          >
+            <ArrowLeft className="size-4" />
+            Atrás
+          </Button>
+        ) : null}
+        {isLastStep ? (
+          <Button
+            type="submit"
+            size="lg"
+            className="pf-btn-emphasis flex-1 shadow-none"
+            disabled={submitting}
+          >
+            {submitting ? submittingLabel : submitLabel}
+          </Button>
+        ) : (
+          <Button type="button" size="lg" className="flex-1" onClick={onNext}>
+            Continuar
+            <ArrowRight className="size-4" />
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

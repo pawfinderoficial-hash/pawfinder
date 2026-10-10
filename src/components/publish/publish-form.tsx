@@ -27,15 +27,11 @@ const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
 const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const STEPS = ["Mascota", "Descripción", "Ubicación", "Revisión"] as const;
 
-const titles: Record<PetKind, { heading: string; intro: string; submit: string }> = {
+const titles: Record<PetKind, { submit: string }> = {
   lost: {
-    heading: "Mascota perdida",
-    intro: "Cargá la información necesaria para que otras personas puedan reconocerla.",
     submit: "Publicar búsqueda",
   },
   found: {
-    heading: "Mascota encontrada",
-    intro: "Contanos cómo es y dónde la encontraste para ubicar a su familia.",
     submit: "Publicar hallazgo",
   },
 };
@@ -195,32 +191,17 @@ export function PublishForm({
   };
 
   return (
-    <form ref={formRef} onSubmit={handleSubmit} className="space-y-6 px-5 py-5">
-      <div className="space-y-4">
-        <div>
-          <h2 className="font-heading text-xl font-semibold">{meta.heading}</h2>
-          <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-            {targetLostPostId && kind === "found"
-              ? "Este hallazgo quedará vinculado con la mascota que marcaste."
-              : meta.intro}
-          </p>
-        </div>
-        <FormStepper steps={STEPS} currentStep={step} />
-      </div>
+    <form
+      ref={formRef}
+      onSubmit={handleSubmit}
+      className="pf-wizard-form space-y-4 px-4 py-4 sm:space-y-6 sm:px-5 sm:py-5"
+    >
+      <FormStepper steps={STEPS} currentStep={step} />
 
       <FormErrors errors={errors} />
 
       {step === 0 ? (
-        <section className="space-y-5" aria-labelledby="pet-step-title">
-          <div>
-            <h3 id="pet-step-title" className="font-heading text-lg font-semibold">
-              Foto e identificación
-            </h3>
-            <p className="text-sm text-muted-foreground">
-              Una imagen clara ayuda a reconocerla más rápido.
-            </p>
-          </div>
-
+        <section className="space-y-4" aria-label="Foto e identificación">
           <div className="space-y-2">
             <div className="relative aspect-video overflow-hidden rounded-2xl border border-border/50 bg-muted shadow-sm">
               <Image
@@ -279,15 +260,7 @@ export function PublishForm({
       ) : null}
 
       {step === 1 ? (
-        <section className="space-y-5" aria-labelledby="description-step-title">
-          <div>
-            <h3 id="description-step-title" className="font-heading text-lg font-semibold">
-              ¿Cómo podemos reconocerla?
-            </h3>
-            <p className="text-sm text-muted-foreground">
-              Sumá señas particulares y contá brevemente qué pasó.
-            </p>
-          </div>
+        <section className="space-y-3" aria-label="Descripción">
           <div className="space-y-2">
             <Label htmlFor="description">Descripción</Label>
             <Textarea
@@ -296,7 +269,6 @@ export function PublishForm({
               placeholder="Ej. Pelaje marrón, collar rojo, tiene una mancha blanca en el pecho…"
               value={description}
               onChange={(event) => setDescription(event.target.value)}
-              autoFocus
             />
             <p className="text-right text-xs text-muted-foreground">
               {description.trim().length}/20 caracteres mínimos
@@ -306,12 +278,7 @@ export function PublishForm({
       ) : null}
 
       {step === 2 ? (
-        <section className="space-y-5" aria-labelledby="location-step-title">
-          <div>
-            <h3 id="location-step-title" className="font-heading text-lg font-semibold">
-              ¿Dónde fue?
-            </h3>
-          </div>
+        <section className="space-y-4" aria-label="Ubicación">
           <div className="space-y-2">
             <Label htmlFor="locationLabel">Zona o referencia</Label>
             <Input
@@ -350,16 +317,7 @@ export function PublishForm({
       ) : null}
 
       {step === 3 ? (
-        <section className="space-y-6" aria-labelledby="review-step-title">
-          <div>
-            <h3 id="review-step-title" className="font-heading text-lg font-semibold">
-              Contacto y revisión
-            </h3>
-            <p className="text-sm text-muted-foreground">
-              Tus datos solo se comparten cuando corresponde iniciar el contacto.
-            </p>
-          </div>
-
+        <section className="space-y-5" aria-label="Contacto y revisión">
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="contactName">Tu nombre</Label>

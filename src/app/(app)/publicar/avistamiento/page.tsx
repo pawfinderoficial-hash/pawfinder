@@ -2,7 +2,7 @@
 
 import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { AppHeader } from "@/components/layout/app-header";
+import { FlowHeader } from "@/components/layout/flow-header";
 import { SightingForm } from "@/components/publish/sighting-form";
 
 function AvistamientoContent() {
@@ -24,7 +24,7 @@ function AvistamientoContent() {
 export default function PublicarAvistamientoPage() {
   return (
     <>
-      <AppHeader title="Avistamiento" />
+      <FlowHeader title="Avistamiento" />
       <Suspense
         fallback={
           <p className="px-5 py-8 text-sm text-muted-foreground">Cargando…</p>

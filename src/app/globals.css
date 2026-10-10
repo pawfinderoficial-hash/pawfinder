@@ -253,3 +253,10 @@
     transition-duration: 0.01ms !important;
   }
 }
+
+@media (max-width: 639px) {
+  body:has(.pf-wizard-form input:focus, .pf-wizard-form textarea:focus)
+    .pf-wizard-actions {
+    display: none;
+  }
+}

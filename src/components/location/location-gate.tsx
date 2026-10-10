@@ -4,6 +4,32 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2, LocateFixed, MapPinCheck, MapPinOff, PawPrint } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+const LOCATION_ENABLED_KEY = "pawfinder:location-enabled";
+
+function rememberLocationEnabled() {
+  try {
+    localStorage.setItem(LOCATION_ENABLED_KEY, "true");
+  } catch {
+    // Private browsing may restrict persistent storage; permission still works.
+  }
+}
+
+function forgetLocationEnabled() {
+  try {
+    localStorage.removeItem(LOCATION_ENABLED_KEY);
+  } catch {
+    // Nothing to clear when storage is unavailable.
+  }
+}
+
+function wasLocationEnabled() {
+  try {
+    return localStorage.getItem(LOCATION_ENABLED_KEY) === "true";
+  } catch {
+    return false;
+  }
+}
+
 type LocationGateStatus =
   | "checking"
   | "ready"
@@ -26,6 +52,7 @@ export function LocationGate({ children }: { children: React.ReactNode }) {
     setStatus("requesting");
     navigator.geolocation.getCurrentPosition(
       (position) => {
+        rememberLocationEnabled();
         sessionStorage.setItem(
           "pawfinder:user-location",
           JSON.stringify({
@@ -37,6 +64,9 @@ export function LocationGate({ children }: { children: React.ReactNode }) {
         setStatus("granted");
       },
       (error) => {
+        if (error.code === error.PERMISSION_DENIED) {
+          forgetLocationEnabled();
+        }
         setStatus(
           error.code === error.PERMISSION_DENIED ? "denied" : "unavailable",
         );
@@ -47,6 +77,7 @@ export function LocationGate({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let timer: number | undefined;
+    const locationWasEnabled = wasLocationEnabled();
     const platformTimer = window.setTimeout(
       () => setIsIos(/iPhone|iPad|iPod/i.test(navigator.userAgent)),
       0,
@@ -68,10 +99,17 @@ export function LocationGate({ children }: { children: React.ReactNode }) {
           handlePermission();
         })
         .catch(() => {
-          timer = window.setTimeout(() => setStatus("ready"), 0);
+          timer = window.setTimeout(
+            () =>
+              locationWasEnabled ? requestLocation() : setStatus("ready"),
+            0,
+          );
         });
     } else {
-      timer = window.setTimeout(() => setStatus("ready"), 0);
+      timer = window.setTimeout(
+        () => (locationWasEnabled ? requestLocation() : setStatus("ready")),
+        0,
+      );
     }
 
     return () => {

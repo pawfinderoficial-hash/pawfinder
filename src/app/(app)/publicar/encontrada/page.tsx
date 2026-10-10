@@ -2,7 +2,7 @@
 
 import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
-import { AppHeader } from "@/components/layout/app-header";
+import { FlowHeader } from "@/components/layout/flow-header";
 import { PublishForm } from "@/components/publish/publish-form";
 
 function EncontradaContent() {
@@ -17,7 +17,7 @@ function EncontradaContent() {
 export default function PublicarEncontradaPage() {
   return (
     <>
-      <AppHeader title="Publicar" />
+      <FlowHeader title="Mascota encontrada" />
       <Suspense
         fallback={
           <p className="px-5 py-8 text-sm text-muted-foreground">Cargando…</p>

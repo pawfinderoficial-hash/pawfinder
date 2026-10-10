@@ -157,34 +157,17 @@ export function SightingForm({ lostPostId, lostPostName }: Props) {
     : "Ahora o recientemente";
 
   return (
-    <form ref={formRef} onSubmit={handleSubmit} className="space-y-6 px-5 py-5">
-      <div className="space-y-4">
-        <div>
-          <h2 className="font-heading text-xl font-semibold">
-            Reportar avistamiento
-          </h2>
-          <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
-            {lostPostName
-              ? `Avisale a la familia de ${lostPostName} dónde la viste.`
-              : "Avisale a la familia dónde viste a la mascota."}
-          </p>
-        </div>
-        <FormStepper steps={STEPS} currentStep={step} />
-      </div>
+    <form
+      ref={formRef}
+      onSubmit={handleSubmit}
+      className="pf-wizard-form space-y-4 px-4 py-4 sm:space-y-6 sm:px-5 sm:py-5"
+    >
+      <FormStepper steps={STEPS} currentStep={step} />
 
       <FormErrors errors={errors} />
 
       {step === 0 ? (
-        <section className="space-y-5" aria-labelledby="sighting-details-title">
-          <div>
-            <h3 id="sighting-details-title" className="font-heading text-lg font-semibold">
-              ¿Qué viste?
-            </h3>
-            <p className="text-sm text-muted-foreground">
-              La foto y la nota son opcionales, pero ayudan a confirmar el avistamiento.
-            </p>
-          </div>
-
+        <section className="space-y-4" aria-label="Qué viste">
           <div className="space-y-2">
             {imageUrl ? (
               <div className="relative aspect-video overflow-hidden rounded-2xl border border-border/50 bg-muted shadow-sm">
@@ -229,12 +212,7 @@ export function SightingForm({ lostPostId, lostPostName }: Props) {
       ) : null}
 
       {step === 1 ? (
-        <section className="space-y-5" aria-labelledby="sighting-location-title">
-          <div>
-            <h3 id="sighting-location-title" className="font-heading text-lg font-semibold">
-              ¿Dónde la viste?
-            </h3>
-          </div>
+        <section className="space-y-4" aria-label="Ubicación">
           <div className="space-y-2">
             <Label htmlFor="locationLabel">Zona o referencia</Label>
             <Input
@@ -269,15 +247,7 @@ export function SightingForm({ lostPostId, lostPostName }: Props) {
       ) : null}
 
       {step === 2 ? (
-        <section className="space-y-5" aria-labelledby="sighting-contact-title">
-          <div>
-            <h3 id="sighting-contact-title" className="font-heading text-lg font-semibold">
-              Momento y contacto
-            </h3>
-            <p className="text-sm text-muted-foreground">
-              El horario ayuda a reconstruir el recorrido de la mascota.
-            </p>
-          </div>
+        <section className="space-y-4" aria-label="Momento y contacto">
           <div className="space-y-2">
             <Label htmlFor="seenAt">Fecha y hora aproximada</Label>
             <Input
@@ -288,9 +258,6 @@ export function SightingForm({ lostPostId, lostPostName }: Props) {
             />
           </div>
           <div className="border-t border-border/70 pt-5">
-            <p className="mb-4 text-xs leading-relaxed text-muted-foreground">
-              Tu teléfono solo se comparte si la familia elige hablar con vos.
-            </p>
             <div className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="contactName">Tu nombre</Label>
@@ -317,16 +284,7 @@ export function SightingForm({ lostPostId, lostPostName }: Props) {
       ) : null}
 
       {step === 3 ? (
-        <section className="space-y-6" aria-labelledby="sighting-review-title">
-          <div>
-            <h3 id="sighting-review-title" className="font-heading text-lg font-semibold">
-              Revisá el avistamiento
-            </h3>
-            <p className="text-sm text-muted-foreground">
-              Confirmá que la zona y el momento sean correctos antes de enviarlo.
-            </p>
-          </div>
-
+        <section className="space-y-5" aria-label="Revisión">
           <div className="flex gap-4">
             {imageUrl ? (
               <div className="relative size-20 shrink-0 overflow-hidden rounded-xl bg-muted">
