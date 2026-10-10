@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  CircleMarker,
   MapContainer,
   TileLayer,
   Marker,
@@ -13,6 +14,16 @@ import "leaflet/dist/leaflet.css";
 import type { PetPost } from "@/types/pet";
 import { MAP_DEFAULT_CENTER } from "@/lib/mock-pets";
 import { cn } from "@/lib/utils";
+import { LocateFixed, Loader2, MapPinOff } from "lucide-react";
+
+const ARGENTINA_CENTER = { lat: -34.6, lng: -64 };
+
+type LocationStatus =
+  | "idle"
+  | "requesting"
+  | "located"
+  | "denied"
+  | "unavailable";
 
 const lostIcon = new L.Icon({
   iconUrl:
@@ -94,13 +105,16 @@ export function PetMapInner({
   // Browse map: geolocate only when no explicit center. Publish picker: always try.
   const followUser = !pickerMode && center === undefined;
   const geolocate = followUser || Boolean(pickerMode);
-  const initialCenter = center ?? MAP_DEFAULT_CENTER;
+  const initialCenter =
+    center ?? (geolocate ? ARGENTINA_CENTER : MAP_DEFAULT_CENTER);
   const [userCenter, setUserCenter] = useState<{
     lat: number;
     lng: number;
   } | null>(null);
   const pickerPositionRef = useRef(pickerPosition);
   const onPickLocationRef = useRef(onPickLocation);
+  const [locationStatus, setLocationStatus] =
+    useState<LocationStatus>("idle");
 
   useEffect(() => {
     pickerPositionRef.current = pickerPosition;
@@ -120,32 +134,36 @@ export function PetMapInner({
     });
   }, []);
 
-  useEffect(() => {
+  const requestLocation = useCallback(() => {
     if (!geolocate) return;
-    if (typeof navigator === "undefined" || !navigator.geolocation) return;
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      setLocationStatus("unavailable");
+      return;
+    }
 
-    let cancelled = false;
+    setLocationStatus("requesting");
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        if (cancelled) return;
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
         setUserCenter({ lat, lng });
+        setLocationStatus("located");
         // Seed picker at user location only if they have not tapped yet.
         if (pickerMode && !pickerPositionRef.current) {
           onPickLocationRef.current?.(lat, lng);
         }
       },
-      () => {
-        // Denied / unavailable / timeout — keep MAP_DEFAULT_CENTER (Palermo).
+      (error) => {
+        setLocationStatus(error.code === error.PERMISSION_DENIED ? "denied" : "unavailable");
       },
-      { enableHighAccuracy: false, timeout: 10_000, maximumAge: 60_000 },
+      { enableHighAccuracy: true, timeout: 15_000, maximumAge: 30_000 },
     );
-
-    return () => {
-      cancelled = true;
-    };
   }, [geolocate, pickerMode]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(requestLocation, 0);
+    return () => window.clearTimeout(timer);
+  }, [requestLocation]);
 
   return (
     <div
@@ -157,7 +175,7 @@ export function PetMapInner({
     >
       <MapContainer
         center={[initialCenter.lat, initialCenter.lng]}
-        zoom={zoom}
+        zoom={center || !geolocate ? zoom : 5}
         className="!h-full !min-h-[240px] w-full"
         style={{ height: "100%", minHeight: 240 }}
         scrollWheelZoom
@@ -167,6 +185,18 @@ export function PetMapInner({
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         {geolocate ? <MapController target={userCenter} zoom={zoom} /> : null}
+        {userCenter ? (
+          <CircleMarker
+            center={[userCenter.lat, userCenter.lng]}
+            radius={8}
+            pathOptions={{
+              color: "#ffffff",
+              fillColor: "#2563eb",
+              fillOpacity: 1,
+              weight: 3,
+            }}
+          />
+        ) : null}
         {pickerMode && onPickLocation ? (
           <ClickPicker onPick={onPickLocation} />
         ) : null}
@@ -188,6 +218,45 @@ export function PetMapInner({
           <Marker position={[pickerPosition.lat, pickerPosition.lng]} icon={lostIcon} />
         ) : null}
       </MapContainer>
+      {geolocate ? (
+        <div className="absolute left-3 top-3 z-[500] max-w-[calc(100%-1.5rem)]">
+          {locationStatus === "located" ? (
+            <button
+              type="button"
+              onClick={requestLocation}
+              className="flex size-10 items-center justify-center rounded-full border border-border/60 bg-card/95 text-primary shadow-md backdrop-blur-sm"
+              title="Actualizar mi ubicación"
+              aria-label="Actualizar mi ubicación"
+            >
+              <LocateFixed className="size-5" />
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={requestLocation}
+              disabled={locationStatus === "requesting"}
+              className="flex min-h-10 items-center gap-2 rounded-xl border border-border/60 bg-card/95 px-3 py-2 text-left text-xs font-medium shadow-md backdrop-blur-sm disabled:cursor-wait"
+            >
+              {locationStatus === "requesting" ? (
+                <Loader2 className="size-4 shrink-0 animate-spin text-primary" />
+              ) : locationStatus === "denied" || locationStatus === "unavailable" ? (
+                <MapPinOff className="size-4 shrink-0 text-destructive" />
+              ) : (
+                <LocateFixed className="size-4 shrink-0 text-primary" />
+              )}
+              <span>
+                {locationStatus === "requesting"
+                  ? "Buscando tu ubicación…"
+                  : locationStatus === "denied"
+                    ? "Ubicación bloqueada. Habilitala y tocá acá."
+                    : locationStatus === "unavailable"
+                      ? "No pudimos ubicarte. Intentar de nuevo."
+                      : "Usar mi ubicación"}
+              </span>
+            </button>
+          )}
+        </div>
+      ) : null}
       {pickerMode ? (
         <p className="absolute bottom-2 left-2 right-2 rounded-lg bg-background/90 px-2 py-1 text-center text-xs shadow-sm">
           Tocá el mapa para marcar la ubicación aproximada

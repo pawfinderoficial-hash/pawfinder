@@ -6,7 +6,6 @@ import { PetMap } from "@/components/map/pet-map";
 import { usePawFinder } from "@/context/pawfinder-context";
 import { PetKindBadge } from "@/components/feed/pet-kind-badge";
 import { PetPostCard } from "@/components/pet/pet-post-card";
-import { MapPinOff } from "lucide-react";
 import type { PetPost } from "@/types/pet";
 import {
   Sheet,
@@ -36,25 +35,14 @@ export default function MapaPage() {
         </div>
       ) : null}
       <div className="relative -mx-4 w-[calc(100%+2rem)]">
-        {allPosts.length === 0 ? (
-          <div className="flex flex-col items-center px-6 py-12 text-center">
-            <div className="pf-empty-icon">
-              <MapPinOff className="size-8" />
-            </div>
-            <p className="mt-4 font-heading text-lg font-semibold">
-              Todavía no hay marcadores
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Publicá un aviso para verlo acá.
-            </p>
-          </div>
-        ) : (
-          <div className={`relative ${MAP_HEIGHT}`}>
+        <div className={`relative ${MAP_HEIGHT}`}>
             <div className="pointer-events-none absolute inset-x-0 top-3 z-[500] flex flex-wrap justify-center gap-2 px-3">
               <span
                 className="pointer-events-auto rounded-full border border-border/50 bg-card/95 px-3 py-1 text-xs font-medium shadow-sm backdrop-blur-sm"
               >
-                {allPosts.length} en el mapa
+                {allPosts.length > 0
+                  ? `${allPosts.length} en el mapa`
+                  : "Sin avisos todavía"}
               </span>
               <span className="pointer-events-auto flex items-center gap-1.5 rounded-full border border-border/50 bg-card/95 px-2.5 py-1 text-xs shadow-sm backdrop-blur-sm">
                 <PetKindBadge kind="lost" />
@@ -71,8 +59,7 @@ export default function MapaPage() {
               heightClass={`${MAP_HEIGHT} w-full`}
               onMarkerClick={setSelected}
             />
-          </div>
-        )}
+        </div>
       </div>
 
       <Sheet

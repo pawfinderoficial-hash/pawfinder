@@ -15,17 +15,27 @@ interface AppHeaderProps {
 export function AppHeader({
   title,
   subtitle,
-  compact,
+  compact = false,
   showNotificationBell = true,
 }: AppHeaderProps) {
   const { userName, unreadNotificationCount } = usePawFinder();
 
   return (
     <header className="sticky top-0 z-40 border-b border-border/40 bg-background/80 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-lg items-start justify-between gap-3 px-5 py-4 md:max-w-2xl">
-        <div className="flex min-w-0 flex-1 items-start gap-2.5">
+      <div
+        className={cn(
+          "mx-auto flex max-w-lg justify-between md:max-w-2xl",
+          compact
+            ? "items-center gap-2 px-4 py-2.5"
+            : "items-start gap-3 px-5 py-4",
+        )}
+      >
+        <div className="flex min-w-0 flex-1 items-center gap-2.5">
           <div
-            className="mt-0.5 flex size-10 shrink-0 items-center justify-center rounded-2xl bg-primary/10 text-primary"
+            className={cn(
+              "flex shrink-0 items-center justify-center bg-primary/10 text-primary",
+              compact ? "size-9 rounded-xl" : "mt-0.5 size-10 rounded-2xl",
+            )}
             aria-hidden
           >
             <PawPrint className="size-5" strokeWidth={2.25} />
@@ -47,12 +57,13 @@ export function AppHeader({
             ) : null}
           </div>
         </div>
-        <div className="flex shrink-0 items-center gap-2">
+        <div className={cn("flex shrink-0 items-center", compact ? "gap-1.5" : "gap-2")}>
           {showNotificationBell ? (
             <Link
               href="/notificaciones"
               className={cn(
                 "relative flex size-10 items-center justify-center rounded-2xl border border-border/50 bg-card/90 text-foreground/80 shadow-sm transition-colors hover:bg-muted/50",
+                compact && "size-9 rounded-xl",
               )}
               aria-label={
                 unreadNotificationCount > 0
@@ -71,7 +82,12 @@ export function AppHeader({
             </Link>
           ) : null}
           {userName ? (
-            <span className="rounded-full border border-border/50 bg-card/90 px-3 py-1.5 text-xs font-medium text-foreground/80 shadow-sm">
+            <span
+              className={cn(
+                "max-w-32 truncate rounded-full border border-border/50 bg-card/90 px-3 py-1.5 text-xs font-medium text-foreground/80 shadow-sm",
+                compact && "max-w-24 px-2.5",
+              )}
+            >
               Hola, {userName.split(" ")[0]}
             </span>
           ) : null}

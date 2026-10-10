@@ -26,14 +26,9 @@ export default function FeedPage() {
     }
   }, [lastPublishSuccess, clearPublishSuccess]);
 
-  const subtitle =
-    feedViewMode === "swipe"
-      ? "Deslizá para ayudar a reunir familias"
-      : "Lista de avisos — tocá para ver el detalle";
-
   return (
     <>
-      <AppHeader title="Explorar" subtitle={subtitle} />
+      <AppHeader title="PawFinder" compact />
       {lastPublishSuccess ? (
         <div
           className="mx-4 mt-3 rounded-2xl border border-primary/15 bg-primary/10 px-3 py-2.5 text-center text-sm text-foreground shadow-sm backdrop-blur-sm"
@@ -43,7 +38,7 @@ export default function FeedPage() {
           sesión).
         </div>
       ) : null}
-      <div className="mx-auto max-w-md space-y-3 px-4 pt-3">
+      <div className="mx-auto max-w-md space-y-2 px-4 pt-2">
         <FeedViewToggle value={feedViewMode} onChange={setFeedViewMode} />
         <FeedSearch
           value={feedSearchQuery}

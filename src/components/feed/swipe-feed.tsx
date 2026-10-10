@@ -173,9 +173,9 @@ export function SwipeFeed() {
   }
 
   return (
-    <div className="px-4 py-4">
+    <div className="px-4 py-3">
       <div
-        className="relative mx-auto h-[min(82vh,700px)] w-full max-w-md"
+        className="relative mx-auto h-[clamp(19rem,calc(100dvh-22rem),39rem)] w-full max-w-md"
       >
         {next ? (
           <motion.div
@@ -196,11 +196,11 @@ export function SwipeFeed() {
         />
       </div>
       <SwipeActions
-        className="mt-7"
+        className="mt-3"
         onPass={() => cardRef.current?.swipe("left")}
         onLike={() => cardRef.current?.swipe("right")}
       />
-      <p className="mt-5 text-center text-xs leading-relaxed text-muted-foreground">
+      <p className="mt-2 text-center text-xs leading-relaxed text-muted-foreground">
         Deslizá o usá los botones · {visibleStack.length} restantes
       </p>
     </div>
