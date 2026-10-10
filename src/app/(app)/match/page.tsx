@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { flushSync } from "react-dom";
@@ -9,6 +8,7 @@ import { AppHeader } from "@/components/layout/app-header";
 import { usePawFinder } from "@/context/pawfinder-context";
 import { Button } from "@/components/ui/button";
 import { PetPostCard } from "@/components/pet/pet-post-card";
+import { ImageGallery } from "@/components/pet/image-gallery";
 import type { PendingSighting } from "@/types/pet";
 import {
   Eye,
@@ -52,15 +52,16 @@ function SightingCard({
     <article className="space-y-3 rounded-2xl border border-border/50 bg-card/90 p-4 shadow-sm">
       <div className="flex items-start gap-3">
         {sighting.imageUrl ? (
-          <div className="relative size-16 shrink-0 overflow-hidden rounded-xl bg-muted">
-            <Image
-              src={sighting.imageUrl}
-              alt=""
-              fill
-              className="object-cover"
-              sizes="64px"
-            />
-          </div>
+          <ImageGallery
+            images={
+              sighting.imageUrls.length > 0
+                ? sighting.imageUrls
+                : [sighting.imageUrl]
+            }
+            alt={`Avistamiento de ${sighting.lostPost.name}`}
+            className="size-16 shrink-0 rounded-xl"
+            compact
+          />
         ) : (
           <div className="flex size-16 shrink-0 items-center justify-center rounded-xl bg-muted">
             <Eye className="size-6 text-muted-foreground" />

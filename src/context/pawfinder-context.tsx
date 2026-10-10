@@ -18,7 +18,7 @@ import type {
   PendingMatch,
   PendingSighting,
   PetPost,
-  PublishDraft,
+  PublishPayload,
   PuedeSerChoice,
   ReportStatus,
   SightingDraft,
@@ -42,7 +42,7 @@ interface PawFinderContextValue {
   allPosts: PetPost[];
   swipeCard: (direction: "left" | "right", postId: string) => void;
   resetFeed: () => void;
-  publishPost: (draft: PublishDraft & { cloudinaryPublicId?: string }) => Promise<void>;
+  publishPost: (draft: PublishPayload) => Promise<void>;
   publishSighting: (draft: SightingDraft) => Promise<void>;
   ownedReports: OwnedReport[];
   ownedSightings: OwnedSighting[];
@@ -226,7 +226,7 @@ export function PawFinderProvider({ children }: { children: ReactNode }) {
   }, [allPosts]);
 
   const publishPost = useCallback(
-    async (draft: PublishDraft & { cloudinaryPublicId?: string }) => {
+    async (draft: PublishPayload) => {
       await fetchJson("/api/posts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

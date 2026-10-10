@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
 import {
@@ -17,6 +16,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { AppHeader } from "@/components/layout/app-header";
+import { ImageGallery } from "@/components/pet/image-gallery";
 import { ReportStatusBadge } from "@/components/pet/report-status-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -59,15 +59,18 @@ function SightingCard({ sighting }: { sighting: OwnedSighting }) {
   return (
     <li className="overflow-hidden rounded-2xl border border-border/50 bg-card/90 shadow-sm">
       <div className="flex gap-3 p-3">
-        <div className="relative size-24 shrink-0 overflow-hidden rounded-xl bg-muted">
-          <Image
-            src={sighting.imageUrl || sighting.lostPost.imageUrl}
-            alt={`Avistamiento de ${sighting.lostPost.name}`}
-            fill
-            className="object-cover"
-            sizes="96px"
-          />
-        </div>
+        <ImageGallery
+          images={
+            sighting.imageUrls.length > 0
+              ? sighting.imageUrls
+              : sighting.lostPost.imageUrls?.length
+                ? sighting.lostPost.imageUrls
+                : [sighting.lostPost.imageUrl]
+          }
+          alt={`Avistamiento de ${sighting.lostPost.name}`}
+          className="size-24 shrink-0 rounded-xl"
+          compact
+        />
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <h2 className="font-heading text-base font-semibold">
@@ -254,15 +257,12 @@ export default function MisAvisosPage() {
                     className="overflow-hidden rounded-2xl border border-border/50 bg-card/90 shadow-sm"
                   >
                     <div className="flex gap-3 p-3">
-                      <div className="relative size-24 shrink-0 overflow-hidden rounded-xl bg-muted">
-                        <Image
-                          src={report.imageUrl}
-                          alt={`Foto de ${report.name}`}
-                          fill
-                          className="object-cover"
-                          sizes="96px"
-                        />
-                      </div>
+                      <ImageGallery
+                        images={report.imageUrls?.length ? report.imageUrls : [report.imageUrl]}
+                        alt={`Foto de ${report.name}`}
+                        className="size-24 shrink-0 rounded-xl"
+                        compact
+                      />
                       <div className="min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
                           <h2 className="font-heading text-lg font-semibold">

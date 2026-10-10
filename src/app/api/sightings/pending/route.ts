@@ -27,6 +27,12 @@ export async function GET() {
       lng: s.lng,
       seenAt: s.seenAt?.toISOString() ?? null,
       imageUrl: s.imageUrl,
+      imageUrls:
+        s.imageUrls.length > 0
+          ? s.imageUrls
+          : s.imageUrl
+            ? [s.imageUrl]
+            : [],
       reporterName: s.contactName || s.reporter.name || "Vecino/a",
       contactPhone:
         s.status === SightingStatus.CONTACT_SHARED ? s.contactPhone : null,
@@ -34,6 +40,10 @@ export async function GET() {
         id: s.lostPost.id,
         name: s.lostPost.name,
         imageUrl: s.lostPost.imageUrl,
+        imageUrls:
+          s.lostPost.imageUrls.length > 0
+            ? s.lostPost.imageUrls
+            : [s.lostPost.imageUrl],
       },
       createdAt: s.createdAt.toISOString(),
     })),

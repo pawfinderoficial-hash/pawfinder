@@ -40,6 +40,7 @@ export function toPetPost(
     lat: includeExactLocation ? post.lat : post.lat + latOffset,
     lng: includeExactLocation ? post.lng : post.lng + lngOffset,
     imageUrl: post.imageUrl,
+    imageUrls: post.imageUrls.length > 0 ? post.imageUrls : [post.imageUrl],
     contactName: includeContact ? post.contactName : "",
     contactPhone: includeContact ? post.contactPhone : "",
     contactEmail: includeContact ? post.contactEmail ?? undefined : undefined,

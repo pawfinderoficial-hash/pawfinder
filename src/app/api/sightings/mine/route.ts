@@ -10,7 +10,7 @@ export async function GET() {
     where: { reporterId: authResult.userId },
     include: {
       lostPost: {
-        select: { id: true, name: true, imageUrl: true },
+        select: { id: true, name: true, imageUrl: true, imageUrls: true },
       },
     },
     orderBy: { createdAt: "desc" },
@@ -23,8 +23,20 @@ export async function GET() {
     locationLabel: sighting.locationLabel,
     seenAt: sighting.seenAt?.toISOString() ?? null,
     imageUrl: sighting.imageUrl,
+    imageUrls:
+      sighting.imageUrls.length > 0
+        ? sighting.imageUrls
+        : sighting.imageUrl
+          ? [sighting.imageUrl]
+          : [],
     createdAt: sighting.createdAt.toISOString(),
-    lostPost: sighting.lostPost,
+    lostPost: {
+      ...sighting.lostPost,
+      imageUrls:
+        sighting.lostPost.imageUrls.length > 0
+          ? sighting.lostPost.imageUrls
+          : [sighting.lostPost.imageUrl],
+    },
   }));
 
   return Response.json({ sightings: items });

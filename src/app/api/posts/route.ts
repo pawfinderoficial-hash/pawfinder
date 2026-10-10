@@ -40,6 +40,22 @@ export async function POST(request: Request) {
   const kind = body.kind === "found" ? PetKind.FOUND : PetKind.LOST;
   const targetLostPostId =
     typeof body.targetLostPostId === "string" ? body.targetLostPostId : null;
+  const imageUrls = Array.isArray(body.imageUrls)
+    ? body.imageUrls.filter((url: unknown): url is string => typeof url === "string").slice(0, 5)
+    : typeof body.imageUrl === "string"
+      ? [body.imageUrl]
+      : [];
+  const cloudinaryPublicIds = Array.isArray(body.cloudinaryPublicIds)
+    ? body.cloudinaryPublicIds
+        .filter((id: unknown): id is string => typeof id === "string")
+        .slice(0, 5)
+    : typeof body.cloudinaryPublicId === "string"
+      ? [body.cloudinaryPublicId]
+      : [];
+
+  if (imageUrls.length === 0) {
+    return Response.json({ error: "Agregá al menos una foto" }, { status: 400 });
+  }
 
   try {
     const { post, matchId } = await prisma.$transaction(async (tx) => {
@@ -79,8 +95,10 @@ export async function POST(request: Request) {
           locationLabel: body.locationLabel,
           lat: body.lat,
           lng: body.lng,
-          imageUrl: body.imageUrl,
-          cloudinaryPublicId: body.cloudinaryPublicId || null,
+          imageUrl: imageUrls[0],
+          imageUrls,
+          cloudinaryPublicId: cloudinaryPublicIds[0] || null,
+          cloudinaryPublicIds,
           contactName: body.contactName,
           contactPhone: body.contactPhone,
           contactEmail: body.contactEmail || null,

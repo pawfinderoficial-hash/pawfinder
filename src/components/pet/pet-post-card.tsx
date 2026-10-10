@@ -1,8 +1,8 @@
 "use client";
 
-import Image from "next/image";
 import { Flag, MapPin } from "lucide-react";
 import { PetKindBadge } from "@/components/feed/pet-kind-badge";
+import { ImageGallery } from "@/components/pet/image-gallery";
 import type { PetPost } from "@/types/pet";
 import { cn } from "@/lib/utils";
 
@@ -38,20 +38,20 @@ export function PetPostCard({
         className,
       )}
     >
-      <div className={cn("relative w-full shrink-0 bg-muted", imageClassName)}>
-        <Image
-          src={post.imageUrl}
-          alt={`Foto de ${post.name}`}
-          fill
-          className="object-cover"
-          sizes="(max-width: 768px) 100vw, 640px"
-          priority={priority}
-        />
-        <div className="absolute left-3 top-3">
-          <PetKindBadge kind={post.kind} />
-        </div>
-        {imageOverlay}
-      </div>
+      <ImageGallery
+        images={post.imageUrls?.length ? post.imageUrls : [post.imageUrl]}
+        alt={`Foto de ${post.name}`}
+        className={cn("w-full shrink-0", imageClassName)}
+        priority={priority}
+        overlay={
+          <>
+            <div className="absolute left-3 top-3">
+              <PetKindBadge kind={post.kind} />
+            </div>
+            {imageOverlay}
+          </>
+        }
+      />
 
       <div className={cn(compact ? "space-y-1.5 px-4 py-3" : "space-y-3 px-5 py-5")}>
         <h2

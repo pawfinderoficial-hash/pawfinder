@@ -13,6 +13,7 @@ export interface PetPost {
   lat: number;
   lng: number;
   imageUrl: string;
+  imageUrls?: string[];
   contactName: string;
   contactPhone: string;
   contactEmail?: string;
@@ -37,12 +38,14 @@ export interface PendingSighting {
   lng: number;
   seenAt: string | null;
   imageUrl: string | null;
+  imageUrls: string[];
   reporterName: string;
   contactPhone: string | null;
   lostPost: {
     id: string;
     name: string;
     imageUrl: string;
+    imageUrls?: string[];
   };
   createdAt: string;
 }
@@ -54,6 +57,7 @@ export interface PuedeSerChoice {
 
 export interface PublishPayload extends PublishDraft {
   cloudinaryPublicId?: string;
+  cloudinaryPublicIds?: string[];
 }
 
 export interface PublishDraft {
@@ -66,6 +70,7 @@ export interface PublishDraft {
   lat: number;
   lng: number;
   imageUrl: string;
+  imageUrls: string[];
   contactName: string;
   contactPhone: string;
   contactEmail: string;
@@ -80,7 +85,9 @@ export interface SightingDraft {
   lng: number;
   seenAt?: string;
   imageUrl?: string;
+  imageUrls?: string[];
   cloudinaryPublicId?: string;
+  cloudinaryPublicIds?: string[];
   contactName: string;
   contactPhone: string;
 }
@@ -92,11 +99,13 @@ export interface OwnedSighting {
   locationLabel: string;
   seenAt: string | null;
   imageUrl: string | null;
+  imageUrls: string[];
   createdAt: string;
   lostPost: {
     id: string;
     name: string;
     imageUrl: string;
+    imageUrls?: string[];
   };
 }
 

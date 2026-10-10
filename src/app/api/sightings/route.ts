@@ -22,6 +22,18 @@ export async function POST(request: Request) {
     typeof body.contactPhone === "string" ? body.contactPhone.trim() : "";
   const lat = Number(body.lat);
   const lng = Number(body.lng);
+  const imageUrls = Array.isArray(body.imageUrls)
+    ? body.imageUrls.filter((url: unknown): url is string => typeof url === "string").slice(0, 5)
+    : typeof body.imageUrl === "string"
+      ? [body.imageUrl]
+      : [];
+  const cloudinaryPublicIds = Array.isArray(body.cloudinaryPublicIds)
+    ? body.cloudinaryPublicIds
+        .filter((id: unknown): id is string => typeof id === "string")
+        .slice(0, 5)
+    : typeof body.cloudinaryPublicId === "string"
+      ? [body.cloudinaryPublicId]
+      : [];
 
   if (!locationLabel) {
     return Response.json({ error: "Indicá la zona del avistamiento" }, { status: 400 });
@@ -72,11 +84,10 @@ export async function POST(request: Request) {
       lat,
       lng,
       seenAt,
-      imageUrl: typeof body.imageUrl === "string" ? body.imageUrl : null,
-      cloudinaryPublicId:
-        typeof body.cloudinaryPublicId === "string"
-          ? body.cloudinaryPublicId
-          : null,
+      imageUrl: imageUrls[0] || null,
+      imageUrls,
+      cloudinaryPublicId: cloudinaryPublicIds[0] || null,
+      cloudinaryPublicIds,
       contactName,
       contactPhone,
     },

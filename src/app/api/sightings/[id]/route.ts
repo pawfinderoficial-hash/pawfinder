@@ -1,6 +1,6 @@
 import { SightingStatus } from "@prisma/client";
 import { requireUserId } from "@/lib/api-auth";
-import { deleteCloudinaryImage } from "@/lib/cloudinary";
+import { deleteCloudinaryImages } from "@/lib/cloudinary";
 import { prisma } from "@/lib/prisma";
 
 export async function PATCH(
@@ -96,7 +96,11 @@ export async function PATCH(
       data: { status: SightingStatus.DISMISSED },
     });
     if (update.count > 0) {
-      await deleteCloudinaryImage(sighting.cloudinaryPublicId);
+      await deleteCloudinaryImages(
+        sighting.cloudinaryPublicIds.length > 0
+          ? sighting.cloudinaryPublicIds
+          : [sighting.cloudinaryPublicId],
+      );
     }
     return Response.json({ ok: true, duplicate: update.count === 0 });
   }

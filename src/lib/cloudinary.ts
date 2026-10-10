@@ -37,3 +37,9 @@ export async function deleteCloudinaryImage(publicId: string | null | undefined)
     /* best effort */
   }
 }
+
+export async function deleteCloudinaryImages(
+  publicIds: Array<string | null | undefined>,
+) {
+  await Promise.all(publicIds.map((publicId) => deleteCloudinaryImage(publicId)));
+}

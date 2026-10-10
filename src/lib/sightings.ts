@@ -1,5 +1,5 @@
 import { SightingStatus } from "@prisma/client";
-import { deleteCloudinaryImage } from "@/lib/cloudinary";
+import { deleteCloudinaryImages } from "@/lib/cloudinary";
 import { prisma } from "@/lib/prisma";
 
 export async function dismissSightingsForPost(postId: string) {
@@ -10,7 +10,7 @@ export async function dismissSightingsForPost(postId: string) {
         in: [SightingStatus.OPEN, SightingStatus.CONTACT_SHARED],
       },
     },
-    select: { cloudinaryPublicId: true },
+    select: { cloudinaryPublicId: true, cloudinaryPublicIds: true },
   });
 
   await prisma.sighting.updateMany({
@@ -25,7 +25,11 @@ export async function dismissSightingsForPost(postId: string) {
 
   await Promise.all(
     sightings.map((sighting) =>
-      deleteCloudinaryImage(sighting.cloudinaryPublicId),
+      deleteCloudinaryImages(
+        sighting.cloudinaryPublicIds.length > 0
+          ? sighting.cloudinaryPublicIds
+          : [sighting.cloudinaryPublicId],
+      ),
     ),
   );
 }

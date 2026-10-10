@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Camera, CheckCircle2, MapPin, ShieldCheck } from "lucide-react";
+import { CheckCircle2, MapPin, ShieldCheck } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,6 +15,11 @@ import {
 } from "@/components/publish/form-stepper";
 import { usePawFinder } from "@/context/pawfinder-context";
 import type { PetKind, PublishDraft } from "@/types/pet";
+import {
+  MultiPhotoPicker,
+  type PendingPhoto,
+  uploadPendingPhotos,
+} from "@/components/publish/multi-photo-picker";
 
 const DEFAULT_IMAGES: Record<PetKind, string> = {
   lost:
@@ -23,8 +28,6 @@ const DEFAULT_IMAGES: Record<PetKind, string> = {
     "https://images.unsplash.com/photo-1548199973-03cce0bbc87b?w=800&q=80",
 };
 
-const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
-const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const STEPS = ["Mascota", "Descripción", "Ubicación", "Revisión"] as const;
 
 const titles: Record<PetKind, { submit: string }> = {
@@ -47,9 +50,13 @@ export function PublishForm({
   const formRef = useRef<HTMLFormElement>(null);
   const { publishPost, clearPublishSuccess } = usePawFinder();
   const [step, setStep] = useState(0);
-  const [imageUrl, setImageUrl] = useState(DEFAULT_IMAGES[kind]);
-  const [photoFile, setPhotoFile] = useState<File | null>(null);
-  const [cloudinaryPublicId, setCloudinaryPublicId] = useState<string>();
+  const [photos, setPhotos] = useState<PendingPhoto[]>([
+    {
+      id: `default-${kind}`,
+      url: DEFAULT_IMAGES[kind],
+      isPlaceholder: true,
+    },
+  ]);
   const [name, setName] = useState("");
   const [species, setSpecies] = useState(kind === "lost" ? "Perro" : "");
   const [breed, setBreed] = useState("");
@@ -75,8 +82,13 @@ export function PublishForm({
   const validateStep = (stepToValidate: number) => {
     const next: string[] = [];
 
-    if (stepToValidate === 0 && !species.trim()) {
-      next.push("Indicá si es perro, gato u otra especie.");
+    if (stepToValidate === 0) {
+      if (!photos.some((photo) => !photo.isPlaceholder)) {
+        next.push("Agregá al menos una foto de la mascota.");
+      }
+      if (!species.trim()) {
+        next.push("Indicá si es perro, gato u otra especie.");
+      }
     }
     if (
       stepToValidate === 1 &&
@@ -116,29 +128,8 @@ export function PublishForm({
 
     setSubmitting(true);
     try {
-      let finalImageUrl = imageUrl;
-      let publicId = cloudinaryPublicId;
-
-      if (photoFile) {
-        const formData = new FormData();
-        formData.append("file", photoFile);
-        const uploadRes = await fetch("/api/upload", {
-          method: "POST",
-          body: formData,
-        });
-        if (!uploadRes.ok) {
-          const uploadError = (await uploadRes.json().catch(() => ({}))) as {
-            error?: string;
-          };
-          throw new Error(uploadError.error || "No se pudo subir la foto");
-        }
-        const uploaded = (await uploadRes.json()) as {
-          url: string;
-          publicId: string;
-        };
-        finalImageUrl = uploaded.url;
-        publicId = uploaded.publicId;
-      }
+      const { imageUrls, cloudinaryPublicIds } =
+        await uploadPendingPhotos(photos);
 
       const draft: PublishDraft = {
         kind,
@@ -149,7 +140,8 @@ export function PublishForm({
         locationLabel: locationLabel.trim(),
         lat: position.lat,
         lng: position.lng,
-        imageUrl: finalImageUrl,
+        imageUrl: imageUrls[0],
+        imageUrls,
         contactName: contactName.trim(),
         contactPhone: contactPhone.trim(),
         contactEmail: contactEmail.trim(),
@@ -158,7 +150,11 @@ export function PublishForm({
           : {}),
       };
       clearPublishSuccess();
-      await publishPost({ ...draft, cloudinaryPublicId: publicId });
+      await publishPost({
+        ...draft,
+        cloudinaryPublicId: cloudinaryPublicIds[0],
+        cloudinaryPublicIds,
+      });
       router.push(kind === "found" && targetLostPostId ? "/match" : "/feed");
     } catch (error) {
       setErrors([
@@ -169,25 +165,6 @@ export function PublishForm({
     } finally {
       setSubmitting(false);
     }
-  };
-
-  const handlePhotoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
-      setErrors(["Formato no permitido. Usá JPG, PNG o WebP."]);
-      event.target.value = "";
-      return;
-    }
-    if (file.size > MAX_IMAGE_BYTES) {
-      setErrors(["La imagen no puede superar los 5 MB."]);
-      event.target.value = "";
-      return;
-    }
-    setErrors([]);
-    setPhotoFile(file);
-    setImageUrl(URL.createObjectURL(file));
-    setCloudinaryPublicId(undefined);
   };
 
   return (
@@ -202,28 +179,14 @@ export function PublishForm({
 
       {step === 0 ? (
         <section className="space-y-4" aria-label="Foto e identificación">
-          <div className="space-y-2">
-            <div className="relative aspect-video overflow-hidden rounded-2xl border border-border/50 bg-muted shadow-sm">
-              <Image
-                src={imageUrl}
-                alt="Vista previa de la mascota"
-                fill
-                className="object-cover"
-                sizes="(max-width: 768px) 100vw, 640px"
-                unoptimized={imageUrl.startsWith("blob:")}
-              />
-            </div>
-            <label className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-xl border border-border bg-background px-3 text-sm font-medium hover:bg-muted">
-              <Camera className="size-4" />
-              Cambiar foto
-              <input
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                className="sr-only"
-                onChange={handlePhotoChange}
-              />
-            </label>
-          </div>
+          <MultiPhotoPicker
+            photos={photos}
+            onChange={(nextPhotos) => {
+              setErrors([]);
+              setPhotos(nextPhotos);
+            }}
+            onError={(message) => setErrors([message])}
+          />
 
           <div className="grid gap-4 sm:grid-cols-2">
             {kind === "lost" ? (
@@ -354,13 +317,18 @@ export function PublishForm({
             <div className="flex gap-4">
               <div className="relative size-20 shrink-0 overflow-hidden rounded-xl bg-muted">
                 <Image
-                  src={imageUrl}
+                  src={photos[0].url}
                   alt="Foto del aviso"
                   fill
                   className="object-cover"
                   sizes="80px"
-                  unoptimized={imageUrl.startsWith("blob:")}
+                  unoptimized={photos[0].url.startsWith("blob:")}
                 />
+                {photos.length > 1 ? (
+                  <span className="absolute bottom-1 right-1 rounded-md bg-black/65 px-1.5 py-0.5 text-[0.6rem] font-semibold text-white">
+                    +{photos.length - 1}
+                  </span>
+                ) : null}
               </div>
               <div className="min-w-0 space-y-1">
                 <p className="font-semibold text-foreground">

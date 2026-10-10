@@ -1,6 +1,6 @@
 import { MatchStatus, ReportStatus } from "@prisma/client";
 import { requireUserId } from "@/lib/api-auth";
-import { deleteCloudinaryImage } from "@/lib/cloudinary";
+import { deleteCloudinaryImages } from "@/lib/cloudinary";
 import { prisma } from "@/lib/prisma";
 import { dismissSightingsForPost } from "@/lib/sightings";
 
@@ -128,7 +128,11 @@ export async function PATCH(
 
     const posts = [match.lostPost, match.foundPost];
     for (const post of posts) {
-      await deleteCloudinaryImage(post.cloudinaryPublicId);
+      await deleteCloudinaryImages(
+        post.cloudinaryPublicIds.length > 0
+          ? post.cloudinaryPublicIds
+          : [post.cloudinaryPublicId],
+      );
       await prisma.petPost.update({
         where: { id: post.id },
         data: { status: ReportStatus.RESOLVED, imageUrl: post.imageUrl },

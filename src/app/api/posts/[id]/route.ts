@@ -1,6 +1,6 @@
 import { ReportStatus } from "@prisma/client";
 import { requireUserId } from "@/lib/api-auth";
-import { deleteCloudinaryImage } from "@/lib/cloudinary";
+import { deleteCloudinaryImages } from "@/lib/cloudinary";
 import { toOwnedReport } from "@/lib/db-mappers";
 import { prisma } from "@/lib/prisma";
 import { dismissSightingsForPost } from "@/lib/sightings";
@@ -47,7 +47,11 @@ export async function PATCH(
   });
 
   if (body.status === "resolved") {
-    await deleteCloudinaryImage(existing.cloudinaryPublicId);
+    await deleteCloudinaryImages(
+      existing.cloudinaryPublicIds.length > 0
+        ? existing.cloudinaryPublicIds
+        : [existing.cloudinaryPublicId],
+    );
     await dismissSightingsForPost(id);
   }
 

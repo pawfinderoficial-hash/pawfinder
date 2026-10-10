@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Camera, CheckCircle2, Clock3, ImageIcon, MapPin, ShieldCheck } from "lucide-react";
+import { CheckCircle2, Clock3, ImageIcon, MapPin, ShieldCheck } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -14,9 +14,12 @@ import {
   FormStepper,
 } from "@/components/publish/form-stepper";
 import { usePawFinder } from "@/context/pawfinder-context";
+import {
+  MultiPhotoPicker,
+  type PendingPhoto,
+  uploadPendingPhotos,
+} from "@/components/publish/multi-photo-picker";
 
-const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
-const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
 const STEPS = ["Qué viste", "Ubicación", "Momento y contacto", "Revisión"] as const;
 
 type Props = {
@@ -29,9 +32,7 @@ export function SightingForm({ lostPostId, lostPostName }: Props) {
   const formRef = useRef<HTMLFormElement>(null);
   const { publishSighting } = usePawFinder();
   const [step, setStep] = useState(0);
-  const [imageUrl, setImageUrl] = useState<string | null>(null);
-  const [photoFile, setPhotoFile] = useState<File | null>(null);
-  const [cloudinaryPublicId, setCloudinaryPublicId] = useState<string>();
+  const [photos, setPhotos] = useState<PendingPhoto[]>([]);
   const [note, setNote] = useState("");
   const [locationLabel, setLocationLabel] = useState("");
   const [seenAtLocal, setSeenAtLocal] = useState("");
@@ -70,25 +71,6 @@ export function SightingForm({ lostPostId, lostPostName }: Props) {
     showStep(Math.min(step + 1, STEPS.length - 1));
   };
 
-  const handlePhotoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-    if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
-      setErrors(["Formato no permitido. Usá JPG, PNG o WebP."]);
-      event.target.value = "";
-      return;
-    }
-    if (file.size > MAX_IMAGE_BYTES) {
-      setErrors(["La imagen no puede superar los 5 MB."]);
-      event.target.value = "";
-      return;
-    }
-    setErrors([]);
-    setPhotoFile(file);
-    setImageUrl(URL.createObjectURL(file));
-    setCloudinaryPublicId(undefined);
-  };
-
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (step < STEPS.length - 1) {
@@ -99,29 +81,8 @@ export function SightingForm({ lostPostId, lostPostName }: Props) {
 
     setSubmitting(true);
     try {
-      let finalImageUrl: string | undefined;
-      let publicId = cloudinaryPublicId;
-
-      if (photoFile) {
-        const formData = new FormData();
-        formData.append("file", photoFile);
-        const uploadRes = await fetch("/api/upload", {
-          method: "POST",
-          body: formData,
-        });
-        if (!uploadRes.ok) {
-          const uploadError = (await uploadRes.json().catch(() => ({}))) as {
-            error?: string;
-          };
-          throw new Error(uploadError.error || "No se pudo subir la foto");
-        }
-        const uploaded = (await uploadRes.json()) as {
-          url: string;
-          publicId: string;
-        };
-        finalImageUrl = uploaded.url;
-        publicId = uploaded.publicId;
-      }
+      const { imageUrls, cloudinaryPublicIds } =
+        await uploadPendingPhotos(photos);
 
       await publishSighting({
         lostPostId,
@@ -132,8 +93,10 @@ export function SightingForm({ lostPostId, lostPostName }: Props) {
         seenAt: seenAtLocal
           ? new Date(seenAtLocal).toISOString()
           : undefined,
-        imageUrl: finalImageUrl,
-        cloudinaryPublicId: publicId,
+        imageUrl: imageUrls[0],
+        imageUrls,
+        cloudinaryPublicId: cloudinaryPublicIds[0],
+        cloudinaryPublicIds,
         contactName: contactName.trim(),
         contactPhone: contactPhone.trim(),
       });
@@ -168,35 +131,15 @@ export function SightingForm({ lostPostId, lostPostName }: Props) {
 
       {step === 0 ? (
         <section className="space-y-4" aria-label="Qué viste">
-          <div className="space-y-2">
-            {imageUrl ? (
-              <div className="relative aspect-video overflow-hidden rounded-2xl border border-border/50 bg-muted shadow-sm">
-                <Image
-                  src={imageUrl}
-                  alt="Vista previa del avistamiento"
-                  fill
-                  className="object-cover"
-                  sizes="(max-width: 768px) 100vw, 640px"
-                  unoptimized
-                />
-              </div>
-            ) : (
-              <div className="flex aspect-video flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border/60 bg-muted/40 text-sm text-muted-foreground">
-                <ImageIcon className="size-7" />
-                Podés continuar sin foto
-              </div>
-            )}
-            <label className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-xl border border-border bg-background px-3 text-sm font-medium hover:bg-muted">
-              <Camera className="size-4" />
-              {imageUrl ? "Cambiar foto" : "Agregar foto"}
-              <input
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                className="sr-only"
-                onChange={handlePhotoChange}
-              />
-            </label>
-          </div>
+          <MultiPhotoPicker
+            photos={photos}
+            onChange={(nextPhotos) => {
+              setErrors([]);
+              setPhotos(nextPhotos);
+            }}
+            onError={(message) => setErrors([message])}
+            optional
+          />
 
           <div className="space-y-2">
             <Label htmlFor="note">Nota</Label>
@@ -286,16 +229,21 @@ export function SightingForm({ lostPostId, lostPostName }: Props) {
       {step === 3 ? (
         <section className="space-y-5" aria-label="Revisión">
           <div className="flex gap-4">
-            {imageUrl ? (
-              <div className="relative size-20 shrink-0 overflow-hidden rounded-xl bg-muted">
+            {photos[0] ? (
+              <div className="relative flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-muted text-xs text-muted-foreground">
                 <Image
-                  src={imageUrl}
+                  src={photos[0].url}
                   alt="Foto del avistamiento"
                   fill
                   className="object-cover"
                   sizes="80px"
                   unoptimized
                 />
+                {photos.length > 1 ? (
+                  <span className="absolute bottom-1 right-1 rounded-md bg-black/65 px-1.5 py-0.5 text-[0.6rem] font-semibold text-white">
+                    +{photos.length - 1}
+                  </span>
+                ) : null}
               </div>
             ) : (
               <div className="flex size-20 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground">
