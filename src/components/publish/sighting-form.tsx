@@ -116,6 +116,7 @@ export function SightingForm({ lostPostId, lostPostName }: Props) {
     ? new Intl.DateTimeFormat("es-AR", {
         dateStyle: "medium",
         timeStyle: "short",
+        hour12: false,
       }).format(new Date(seenAtLocal))
     : "Ahora o recientemente";
 

@@ -17,7 +17,7 @@ import {
   LockKeyhole,
   MessageCircle,
   PartyPopper,
-  Phone,
+  X,
 } from "lucide-react";
 
 function SightingCard({
@@ -26,7 +26,7 @@ function SightingCard({
   onDismiss,
 }: {
   sighting: PendingSighting;
-  onContact: () => Promise<void>;
+  onContact: () => Promise<{ contactPhone: string; contactName: string }>;
   onDismiss: () => Promise<void>;
 }) {
   const [busy, setBusy] = useState(false);
@@ -43,6 +43,30 @@ function SightingCard({
         error instanceof Error
           ? error.message
           : "No pudimos completar la acción. Intentá de nuevo.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const openWhatsApp = async () => {
+    setBusy(true);
+    setActionError(null);
+    try {
+      const contact = phone
+        ? { contactPhone: phone }
+        : await onContact();
+      window.location.assign(
+        buildWhatsAppUrl(
+          contact.contactPhone,
+          `Hola, soy quien busca a ${sighting.lostPost.name}. Vi tu avistamiento en PawFinder. ¿Podemos hablar?`,
+        ),
+      );
+    } catch (error) {
+      setActionError(
+        error instanceof Error
+          ? error.message
+          : "No pudimos abrir WhatsApp. Intentá de nuevo.",
       );
     } finally {
       setBusy(false);
@@ -83,6 +107,7 @@ function SightingCard({
                   month: "short",
                   hour: "2-digit",
                   minute: "2-digit",
+                  hour12: false,
                 })}`
               : null}
           </p>
@@ -99,64 +124,26 @@ function SightingCard({
         </p>
       ) : null}
 
-      {phone ? (
-        <div className="rounded-xl border border-primary/20 bg-primary/10 px-3 py-3 text-sm">
-          <p className="font-medium">Teléfono del avistador</p>
-          <p className="mt-1 font-semibold text-foreground">{phone}</p>
-          <div className="mt-3 grid grid-cols-[1fr_auto] gap-2">
-            <a
-              href={buildWhatsAppUrl(
-                phone,
-                `Hola, soy quien busca a ${sighting.lostPost.name}. Vi tu avistamiento en PawFinder. ¿Podemos hablar?`,
-              )}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-primary px-3 font-semibold text-primary-foreground"
-            >
-              <MessageCircle className="size-4" />
-              Abrir WhatsApp
-            </a>
-            <a
-              href={`tel:${phone}`}
-              className="inline-flex size-10 items-center justify-center rounded-lg border border-primary/30 text-primary"
-              aria-label={`Llamar al ${phone}`}
-              title="Llamar"
-            >
-              <Phone className="size-4" />
-            </a>
-          </div>
-          <p className="mt-1 text-xs text-muted-foreground">
-            El avistador no ve tu teléfono en este paso.
-          </p>
-        </div>
-      ) : (
-        <div className="flex gap-2 rounded-xl border border-border/50 bg-muted/40 p-3 text-sm text-muted-foreground">
-          <LockKeyhole className="mt-0.5 size-4 shrink-0 text-primary" />
-          <p>
-            Todavía no hay teléfonos revelados. Si querés hablar, vas a ver solo
-            el teléfono de quien avistó.
-          </p>
-        </div>
-      )}
-
-      <div className="flex flex-col gap-2 sm:flex-row">
-        {!phone ? (
-          <Button
-            className="pf-btn-emphasis flex-1 rounded-xl shadow-none"
-            disabled={busy}
-            onClick={() => void runAction(onContact)}
-          >
-            <MessageCircle className="size-4" />
-            Ver contacto
-          </Button>
-        ) : null}
+      <div className="grid grid-cols-[1fr_3.25rem] gap-2">
         <Button
+          className="pf-btn-emphasis min-h-12 rounded-xl shadow-none"
+          disabled={busy}
+          onClick={() => void openWhatsApp()}
+        >
+          <MessageCircle className="size-5" />
+          Abrir WhatsApp
+        </Button>
+        <Button
+          type="button"
           variant="outline"
-          className="flex-1 rounded-xl"
+          size="icon"
+          className="size-[3.25rem] rounded-xl text-destructive hover:bg-destructive/10 hover:text-destructive"
           disabled={busy}
           onClick={() => void runAction(onDismiss)}
+          aria-label="Descartar avistamiento"
+          title="Descartar"
         >
-          Descartar
+          <X className="size-5" />
         </Button>
       </div>
     </article>
@@ -271,7 +258,7 @@ export default function MatchPage() {
               <SightingCard
                 key={s.id}
                 sighting={s}
-                onContact={() => contactSighting(s.id).then(() => undefined)}
+                onContact={() => contactSighting(s.id)}
                 onDismiss={() => dismissSighting(s.id)}
               />
             ))}
