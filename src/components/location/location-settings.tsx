@@ -69,7 +69,7 @@ export function LocationSettings() {
         render={
           <button
             type="button"
-            className="flex min-h-9 max-w-full items-center gap-2 rounded-full border border-border/60 bg-card/90 px-3 text-xs font-medium text-foreground shadow-sm"
+            className="flex min-h-10 max-w-full items-center gap-2 rounded-xl border border-border/60 bg-card/95 px-3 text-xs font-semibold text-foreground shadow-sm"
           />
         }
       >

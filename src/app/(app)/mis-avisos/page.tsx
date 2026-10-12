@@ -225,29 +225,32 @@ export default function MisAvisosPage() {
               Nueva publicación
             </Button>
 
-            <div className="grid grid-cols-3 gap-2" aria-label="Resumen de avisos">
-              <div className="rounded-xl border border-border/50 bg-card/90 p-3">
-                <p className="text-xl font-semibold">{activeCount}</p>
-                <p className="text-xs text-muted-foreground">En búsqueda</p>
+            <div
+              className="grid grid-cols-3 divide-x divide-border/60 rounded-xl border border-border/50 bg-card/80 py-2"
+              aria-label="Resumen de avisos"
+            >
+              <div className="px-2 text-center">
+                <p className="text-base font-semibold leading-none">{activeCount}</p>
+                <p className="mt-1 text-[0.68rem] text-muted-foreground">En búsqueda</p>
               </div>
-              <div className="rounded-xl border border-border/50 bg-card/90 p-3">
-                <p className="text-xl font-semibold">
+              <div className="px-2 text-center" title="Matches pendientes de revisar">
+                <p className="text-base font-semibold leading-none">
                   {ownedReports.reduce(
                     (total, report) => total + report.candidateCount,
                     0,
                   )}
                 </p>
-                <p className="text-xs text-muted-foreground">Coincidencias</p>
+                <p className="mt-1 text-[0.68rem] text-muted-foreground">Posibles</p>
               </div>
-              <div className="rounded-xl border border-border/50 bg-card/90 p-3">
-                <p className="text-xl font-semibold">
+              <div className="px-2 text-center">
+                <p className="text-base font-semibold leading-none">
                   {
                     ownedReports.filter(
                       (report) => report.status === "resolved",
                     ).length
                   }
                 </p>
-                <p className="text-xs text-muted-foreground">Resueltos</p>
+                <p className="mt-1 text-[0.68rem] text-muted-foreground">Resueltos</p>
               </div>
             </div>
 

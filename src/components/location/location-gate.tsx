@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import { Loader2, LocateFixed, MapPinCheck, MapPinOff, PawPrint } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ChevronDown, Loader2, LocateFixed, MapPin, MapPinCheck, MapPinOff, PawPrint, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ARGENTINA_CITIES, nearestCity } from "@/lib/argentina-cities";
 import {
@@ -20,7 +20,8 @@ type LocationGateStatus =
 export function LocationGate({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<LocationGateStatus>("checking");
   const [isIos, setIsIos] = useState(false);
-  const [cityValue, setCityValue] = useState("");
+  const [cityPickerOpen, setCityPickerOpen] = useState(false);
+  const [cityQuery, setCityQuery] = useState("");
   const permissionRef = useRef<PermissionStatus | null>(null);
 
   const requestLocation = useCallback(() => {
@@ -93,6 +94,14 @@ export function LocationGate({ children }: { children: React.ReactNode }) {
     };
   }, [requestLocation]);
 
+  const visibleCities = useMemo(() => {
+    const normalized = cityQuery.trim().toLocaleLowerCase("es");
+    if (!normalized) return ARGENTINA_CITIES;
+    return ARGENTINA_CITIES.filter((city) =>
+      `${city.name} ${city.province}`.toLocaleLowerCase("es").includes(normalized),
+    );
+  }, [cityQuery]);
+
   if (status === "granted") return children;
 
   const isChecking = status === "checking";
@@ -100,15 +109,11 @@ export function LocationGate({ children }: { children: React.ReactNode }) {
   const isBusy = isChecking || isRequesting;
   const isDenied = status === "denied";
 
-  const chooseCity = () => {
-    const city = ARGENTINA_CITIES.find(
-      (candidate) => `${candidate.name}|${candidate.province}` === cityValue,
-    );
-    if (!city) return;
+  const chooseCity = (city: (typeof ARGENTINA_CITIES)[number]) => {
     storeBrowserLocation({
       lat: city.lat,
       lng: city.lng,
-      capturedAt: Date.now(),
+      capturedAt: 0,
       city: `${city.name}, ${city.province}`,
       radiusKm: 20,
       source: "manual",
@@ -191,24 +196,47 @@ export function LocationGate({ children }: { children: React.ReactNode }) {
         <div className="my-5 flex items-center gap-3 text-xs text-muted-foreground">
           <span className="h-px flex-1 bg-border" />o<span className="h-px flex-1 bg-border" />
         </div>
-        <div className="flex gap-2">
-          <select
-            value={cityValue}
-            onChange={(event) => setCityValue(event.target.value)}
-            className="min-h-11 min-w-0 flex-1 rounded-xl border border-input bg-background px-3 text-sm"
-            aria-label="Elegir ciudad"
-          >
-            <option value="">Elegir ciudad</option>
-            {ARGENTINA_CITIES.map((city) => (
-              <option key={`${city.name}-${city.province}`} value={`${city.name}|${city.province}`}>
-                {city.name}, {city.province}
-              </option>
-            ))}
-          </select>
-          <Button type="button" variant="outline" onClick={chooseCity} disabled={!cityValue}>
-            Continuar
-          </Button>
-        </div>
+        <button
+          type="button"
+          onClick={() => setCityPickerOpen((current) => !current)}
+          className="flex min-h-12 w-full items-center gap-3 rounded-xl border border-input bg-card px-4 text-left text-sm font-semibold shadow-sm"
+          aria-expanded={cityPickerOpen}
+        >
+          <MapPin className="size-5 shrink-0 text-primary" />
+          <span className="flex-1">Elegir ciudad manualmente</span>
+          <ChevronDown className={`size-4 text-muted-foreground transition-transform ${cityPickerOpen ? "rotate-180" : ""}`} />
+        </button>
+
+        {cityPickerOpen ? (
+          <div className="mt-2 overflow-hidden rounded-xl border border-border/60 bg-card text-left shadow-sm">
+            <div className="relative border-b p-2">
+              <Search className="pointer-events-none absolute left-5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <input
+                value={cityQuery}
+                onChange={(event) => setCityQuery(event.target.value)}
+                placeholder="Buscar ciudad o provincia"
+                className="min-h-11 w-full rounded-lg bg-muted/50 pl-10 pr-3 text-sm outline-none focus:ring-2 focus:ring-primary/30"
+                autoFocus
+              />
+            </div>
+            <div className="max-h-52 overflow-y-auto">
+              {visibleCities.map((city) => (
+                <button
+                  key={`${city.name}-${city.province}`}
+                  type="button"
+                  onClick={() => chooseCity(city)}
+                  className="flex min-h-12 w-full items-center justify-between border-b px-4 text-left last:border-b-0 active:bg-primary/10"
+                >
+                  <span className="text-sm font-semibold">{city.name}</span>
+                  <span className="text-xs text-muted-foreground">{city.province}</span>
+                </button>
+              ))}
+              {visibleCities.length === 0 ? (
+                <p className="px-4 py-5 text-center text-sm text-muted-foreground">No encontramos esa ciudad</p>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
       </section>
     </main>
   );
