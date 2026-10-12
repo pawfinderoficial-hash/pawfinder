@@ -19,6 +19,8 @@ export const metadata: Metadata = {
   title: "PawFinder — Reuní mascotas con su familia",
   description:
     "PawFinder: reuní mascotas perdidas con quienes las encontraron en tu barrio.",
+  manifest: "/manifest.webmanifest",
+  icons: { icon: "/icon-192.png", apple: "/apple-touch-icon.png" },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

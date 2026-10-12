@@ -3,7 +3,7 @@
 import { useRef, useState } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { CheckCircle2, MapPin, ShieldCheck } from "lucide-react";
+import { CheckCircle2, ChevronDown, MapPin, ShieldCheck } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -60,6 +60,12 @@ export function PublishForm({
   const [name, setName] = useState("");
   const [species, setSpecies] = useState(kind === "lost" ? "Perro" : "");
   const [breed, setBreed] = useState("");
+  const [showDetails, setShowDetails] = useState(false);
+  const [color, setColor] = useState("");
+  const [size, setSize] = useState("");
+  const [sex, setSex] = useState("");
+  const [ageLabel, setAgeLabel] = useState("");
+  const [collar, setCollar] = useState("");
   const [description, setDescription] = useState("");
   const [locationLabel, setLocationLabel] = useState("");
   const [position, setPosition] = useState<{ lat: number; lng: number } | null>(
@@ -136,6 +142,11 @@ export function PublishForm({
         name: name.trim(),
         species: species.trim(),
         breed: breed.trim(),
+        color: color.trim(),
+        size,
+        sex,
+        ageLabel: ageLabel.trim(),
+        collar: collar.trim(),
         description: description.trim(),
         locationLabel: locationLabel.trim(),
         lat: position.lat,
@@ -219,6 +230,50 @@ export function PublishForm({
               />
             </div>
           </div>
+          <button
+            type="button"
+            onClick={() => setShowDetails((current) => !current)}
+            className="flex min-h-10 w-full items-center justify-between rounded-xl border border-border/60 px-3 text-sm font-medium"
+            aria-expanded={showDetails}
+          >
+            Agregar más detalles (opcional)
+            <ChevronDown
+              className={`size-4 transition-transform ${showDetails ? "rotate-180" : ""}`}
+            />
+          </button>
+          {showDetails ? (
+            <div className="grid gap-4 rounded-xl bg-muted/35 p-3 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="color">Color</Label>
+                <Input id="color" value={color} onChange={(event) => setColor(event.target.value)} placeholder="Negro, marrón…" />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="size">Tamaño</Label>
+                <select id="size" value={size} onChange={(event) => setSize(event.target.value)} className="min-h-11 w-full rounded-xl border border-input bg-background px-3 text-sm">
+                  <option value="">Sin indicar</option>
+                  <option value="Pequeño">Pequeño</option>
+                  <option value="Mediano">Mediano</option>
+                  <option value="Grande">Grande</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="sex">Sexo</Label>
+                <select id="sex" value={sex} onChange={(event) => setSex(event.target.value)} className="min-h-11 w-full rounded-xl border border-input bg-background px-3 text-sm">
+                  <option value="">Sin indicar</option>
+                  <option value="Hembra">Hembra</option>
+                  <option value="Macho">Macho</option>
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="ageLabel">Edad aproximada</Label>
+                <Input id="ageLabel" value={ageLabel} onChange={(event) => setAgeLabel(event.target.value)} placeholder="Ej. 3 años" />
+              </div>
+              <div className="space-y-2 sm:col-span-2">
+                <Label htmlFor="collar">Collar o identificación</Label>
+                <Input id="collar" value={collar} onChange={(event) => setCollar(event.target.value)} placeholder="Ej. Collar rojo con chapita" />
+              </div>
+            </div>
+          ) : null}
         </section>
       ) : null}
 

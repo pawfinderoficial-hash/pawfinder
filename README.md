@@ -10,6 +10,7 @@ App para reunir mascotas perdidas con quienes las encontraron. UI en español (A
 - Prisma 6 + PostgreSQL (Neon)
 - Cloudinary (fotos de avisos)
 - Leaflet / react-leaflet
+- Web Push (service worker + VAPID)
 
 ## Requisitos
 
@@ -34,6 +35,8 @@ npm install
 | `NEXTAUTH_URL` | `http://localhost:43123` en local |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | OAuth — redirect `http://localhost:43123/api/auth/callback/google` |
 | `CLOUDINARY_*` | Upload de fotos |
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` | Notificaciones push — generar con `npx web-push generate-vapid-keys` |
+| `VAPID_SUBJECT` | Email de contacto con formato `mailto:...` |
 
 3. Migraciones (primera vez o CI):
 
@@ -52,12 +55,13 @@ Abrí [http://localhost:43123](http://localhost:43123) e iniciá sesión con Goo
 
 ## Flujos v1
 
-- Publicar perdida / encontrada (foto + mapa + DB)
-- Explorar: swipe, lista, búsqueda y mapa desde Postgres
+- Publicar perdida / encontrada (hasta 5 fotos, mapa, detalles opcionales + DB)
+- Explorar: swipe, lista y mapa filtrados por ciudad y radio persistentes
 - «Puede ser» crea match pendiente + notificación
 - Dueño de aviso perdido confirma o rechaza
+- Contacto directo por WhatsApp después de habilitar el contacto
 - Punto de encuentro (domicilio o puntos demo) y cierre (borra foto en Cloudinary)
-- Mis avisos y notificaciones in-app (+ auspiciante mock)
+- Mis publicaciones, notificaciones in-app y push instalables (+ auspiciante mock)
 
 El panel `/admin` sigue siendo **demo visual** sin backend ni roles. Requiere sesión,
 pero no debe considerarse un panel administrativo seguro hasta implementar permisos.
@@ -83,7 +87,8 @@ archivos de datos locales si se conservan sus credenciales.
 - Implementar roles y backend real para administración/moderación.
 - Validar todos los cuerpos JSON de las APIs y agregar límites de frecuencia.
 - Persistir puntos de encuentro; actualmente se muestran datos demo.
-- Definir mensajería interna, selección de aviso al crear un match e IA de sugerencias.
+- Desarrollar el panel administrativo como plataforma web separada, con roles y auditoría.
+- Evolucionar las sugerencias de coincidencias con análisis de fotos y descripciones.
 - Resolver el historial de imágenes cerradas: hoy Cloudinary borra la foto al cerrar
   un encuentro, pero el aviso conserva su URL.
 

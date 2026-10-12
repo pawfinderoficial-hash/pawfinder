@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Bell, Inbox, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PushNotificationControl } from "@/components/notifications/push-notification-control";
 
 function NotificationRow({
   item,
@@ -95,6 +96,7 @@ export default function NotificacionesPage() {
         showNotificationBell={false}
       />
       <div className="space-y-4 px-4 py-4">
+        <PushNotificationControl />
         {notifications.length === 0 ? (
           <div className="flex flex-col items-center px-4 py-16 text-center">
             <div className="pf-empty-icon mb-4">

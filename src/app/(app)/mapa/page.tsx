@@ -13,11 +13,12 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { LocationSettings } from "@/components/location/location-settings";
 
 const MAP_HEIGHT = "h-[calc(100dvh-11rem)]";
 
 export default function MapaPage() {
-  const { allPosts } = usePawFinder();
+  const { allPosts, location } = usePawFinder();
   const [selected, setSelected] = useState<PetPost | null>(null);
   const [reportSent, setReportSent] = useState(false);
   const lost = allPosts.filter((p) => p.kind === "lost").length;
@@ -34,6 +35,9 @@ export default function MapaPage() {
       <div className="relative -mx-4 w-[calc(100%+2rem)]">
         <div className={`relative ${MAP_HEIGHT}`}>
             <div className="pointer-events-none absolute inset-x-0 top-3 z-[500] flex flex-wrap justify-center gap-2 px-3">
+              <div className="pointer-events-auto">
+                <LocationSettings />
+              </div>
               <span
                 className="pointer-events-auto rounded-full border border-border/50 bg-card/95 px-3 py-1 text-xs font-medium shadow-sm backdrop-blur-sm"
               >
@@ -55,6 +59,8 @@ export default function MapaPage() {
               fullBleed
               heightClass={`${MAP_HEIGHT} w-full`}
               onMarkerClick={setSelected}
+              center={location ? { lat: location.lat, lng: location.lng } : undefined}
+              zoom={(location?.radiusKm ?? 20) <= 10 ? 12 : (location?.radiusKm ?? 20) <= 20 ? 11 : 10}
             />
         </div>
       </div>

@@ -8,6 +8,11 @@ export interface PetPost {
   name: string;
   species: string;
   breed?: string;
+  color?: string;
+  size?: string;
+  sex?: string;
+  ageLabel?: string;
+  collar?: string;
   description: string;
   locationLabel: string;
   lat: number;
@@ -65,6 +70,11 @@ export interface PublishDraft {
   name: string;
   species: string;
   breed: string;
+  color: string;
+  size: string;
+  sex: string;
+  ageLabel: string;
+  collar: string;
   description: string;
   locationLabel: string;
   lat: number;

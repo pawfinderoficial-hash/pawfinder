@@ -33,19 +33,22 @@ import type { OwnedReport, OwnedSighting } from "@/types/pet";
 
 const sightingStatus: Record<
   OwnedSighting["status"],
-  { label: string; className: string }
+  { label: string; className: string; nextStep: string }
 > = {
   open: {
-    label: "Enviado",
+    label: "Esperando respuesta",
     className: "bg-primary/10 text-primary",
+    nextStep: "La familia todavía no respondió. No tenés que hacer nada por ahora.",
   },
   contact_shared: {
-    label: "Contacto solicitado",
+    label: "Te van a contactar",
     className: "bg-emerald-100 text-emerald-800",
+    nextStep: "La familia ya recibió tu teléfono. Revisá tus llamadas y WhatsApp.",
   },
   dismissed: {
-    label: "Descartado",
+    label: "No coincide",
     className: "bg-muted text-muted-foreground",
+    nextStep: "La familia indicó que no era su mascota. No necesitás hacer nada más.",
   },
 };
 
@@ -89,10 +92,15 @@ function SightingCard({ sighting }: { sighting: OwnedSighting }) {
           </p>
         </div>
       </div>
-      <p className="flex items-center gap-1.5 border-t border-border/40 px-3 py-2.5 text-xs text-muted-foreground">
-        <Clock3 className="size-3.5" />
-        Enviado el {reportedAt}
-      </p>
+      <div className="border-t border-border/40 px-3 py-2.5">
+        <p className="text-xs font-medium leading-relaxed text-foreground/85">
+          {status.nextStep}
+        </p>
+        <p className="mt-1 flex items-center gap-1.5 text-[0.7rem] text-muted-foreground">
+          <Clock3 className="size-3.5" />
+          Enviado el {reportedAt}
+        </p>
+      </div>
     </li>
   );
 }

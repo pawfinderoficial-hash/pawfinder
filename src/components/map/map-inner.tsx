@@ -15,11 +15,7 @@ import type { PetPost } from "@/types/pet";
 import { MAP_DEFAULT_CENTER } from "@/lib/mock-pets";
 import { cn } from "@/lib/utils";
 import { LocateFixed, Loader2, MapPinOff } from "lucide-react";
-import {
-  clearBrowserLocation,
-  readBrowserLocation,
-  storeBrowserLocation,
-} from "@/lib/browser-location";
+import { readBrowserLocation, storeBrowserLocation } from "@/lib/browser-location";
 
 const ARGENTINA_CENTER = { lat: -34.6, lng: -64 };
 
@@ -166,7 +162,15 @@ export function PetMapInner({
       (position) => {
         const lat = position.coords.latitude;
         const lng = position.coords.longitude;
-        storeBrowserLocation({ lat, lng, capturedAt: Date.now() });
+        const previous = readBrowserLocation();
+        storeBrowserLocation({
+          lat,
+          lng,
+          capturedAt: Date.now(),
+          city: previous?.city ?? "Mi ubicación",
+          radiusKm: previous?.radiusKm ?? 20,
+          source: "gps",
+        });
         setUserCenter({ lat, lng });
         setLocationStatus("located");
         // Seed picker at user location only if they have not tapped yet.
@@ -175,7 +179,6 @@ export function PetMapInner({
         }
       },
       (error) => {
-        if (error.code === error.PERMISSION_DENIED) clearBrowserLocation();
         setLocationStatus(error.code === error.PERMISSION_DENIED ? "denied" : "unavailable");
       },
       { enableHighAccuracy: true, timeout: 15_000, maximumAge: 30_000 },
@@ -206,7 +209,7 @@ export function PetMapInner({
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
-        {geolocate ? <MapController target={userCenter} zoom={zoom} /> : null}
+        <MapController target={center ?? (geolocate ? userCenter : null)} zoom={zoom} />
         {userCenter ? (
           <CircleMarker
             center={[userCenter.lat, userCenter.lng]}

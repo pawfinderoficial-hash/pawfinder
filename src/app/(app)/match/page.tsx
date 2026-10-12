@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { PetPostCard } from "@/components/pet/pet-post-card";
 import { ImageGallery } from "@/components/pet/image-gallery";
 import type { PendingSighting } from "@/types/pet";
+import { buildWhatsAppUrl } from "@/lib/whatsapp";
 import {
   Eye,
   HeartHandshake,
@@ -99,15 +100,31 @@ function SightingCard({
       ) : null}
 
       {phone ? (
-        <div className="rounded-xl border border-primary/20 bg-primary/10 px-3 py-2.5 text-sm">
+        <div className="rounded-xl border border-primary/20 bg-primary/10 px-3 py-3 text-sm">
           <p className="font-medium">Teléfono del avistador</p>
-          <a
-            href={`tel:${phone}`}
-            className="mt-1 inline-flex items-center gap-1.5 font-semibold text-primary"
-          >
-            <Phone className="size-4" />
-            {phone}
-          </a>
+          <p className="mt-1 font-semibold text-foreground">{phone}</p>
+          <div className="mt-3 grid grid-cols-[1fr_auto] gap-2">
+            <a
+              href={buildWhatsAppUrl(
+                phone,
+                `Hola, soy quien busca a ${sighting.lostPost.name}. Vi tu avistamiento en PawFinder. ¿Podemos hablar?`,
+              )}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex min-h-10 items-center justify-center gap-2 rounded-lg bg-primary px-3 font-semibold text-primary-foreground"
+            >
+              <MessageCircle className="size-4" />
+              Abrir WhatsApp
+            </a>
+            <a
+              href={`tel:${phone}`}
+              className="inline-flex size-10 items-center justify-center rounded-lg border border-primary/30 text-primary"
+              aria-label={`Llamar al ${phone}`}
+              title="Llamar"
+            >
+              <Phone className="size-4" />
+            </a>
+          </div>
           <p className="mt-1 text-xs text-muted-foreground">
             El avistador no ve tu teléfono en este paso.
           </p>
@@ -130,7 +147,7 @@ function SightingCard({
             onClick={() => void runAction(onContact)}
           >
             <MessageCircle className="size-4" />
-            Quiero hablar
+            Ver contacto
           </Button>
         ) : null}
         <Button

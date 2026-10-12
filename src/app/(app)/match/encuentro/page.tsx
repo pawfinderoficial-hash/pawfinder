@@ -12,11 +12,13 @@ import {
   CheckCircle2,
   Home,
   MapPin,
+  MessageCircle,
   Phone,
   Store,
   Stethoscope,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { buildWhatsAppUrl } from "@/lib/whatsapp";
 
 export default function MatchEncuentroPage() {
   const router = useRouter();
@@ -71,6 +73,18 @@ export default function MatchEncuentroPage() {
                 <Phone className="size-4 shrink-0 text-primary" />
                 {encounterMatch.foundPost.contactPhone}
               </p>
+              <a
+                href={buildWhatsAppUrl(
+                  encounterMatch.foundPost.contactPhone,
+                  `Hola, te escribo por el encuentro de ${encounterMatch.foundPost.name} en PawFinder. ¿Coordinamos?`,
+                )}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 font-semibold text-primary-foreground"
+              >
+                <MessageCircle className="size-4" />
+                Coordinar por WhatsApp
+              </a>
             </div>
           ) : null}
           <Button

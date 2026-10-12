@@ -7,6 +7,7 @@ import { FeedList } from "@/components/feed/feed-list";
 import { FeedViewToggle } from "@/components/feed/feed-view-toggle";
 import { FeedSearch } from "@/components/feed/feed-search";
 import { usePawFinder } from "@/context/pawfinder-context";
+import { LocationSettings } from "@/components/location/location-settings";
 
 export default function FeedPage() {
   const {
@@ -46,6 +47,9 @@ export default function FeedPage() {
           posts={allPosts}
           showSuggestions={feedViewMode === "lista"}
         />
+        <div className="flex justify-center pb-1">
+          <LocationSettings />
+        </div>
       </div>
       {feedViewMode === "swipe" ? <SwipeFeed /> : <FeedList />}
     </>

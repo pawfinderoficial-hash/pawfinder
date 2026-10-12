@@ -1,6 +1,7 @@
 import { MatchStatus, PetKind, ReportStatus } from "@prisma/client";
 import { requireUserId } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
+import { sendPushToUser } from "@/lib/push-server";
 
 export async function POST(request: Request) {
   const authResult = await requireUserId();
@@ -98,6 +99,12 @@ export async function POST(request: Request) {
         postId: foundPostId,
       },
     });
+    await sendPushToUser(lostPost.userId, {
+      title: `¡Posible match con ${lostPost.name}!`,
+      body: `${finderName} marcó «Puede ser» en una publicación relacionada.`,
+      url: "/match",
+      tag: `match-${match.id}`,
+    });
   }
 
   if (foundPost.userId !== userId) {
@@ -110,6 +117,12 @@ export async function POST(request: Request) {
         matchId: match.id,
         postId: lostPostId,
       },
+    });
+    await sendPushToUser(foundPost.userId, {
+      title: "Nuevo interés en tu aviso",
+      body: `${finderName} quiere revisar una posible coincidencia.`,
+      url: "/match",
+      tag: `match-${match.id}`,
     });
   }
 

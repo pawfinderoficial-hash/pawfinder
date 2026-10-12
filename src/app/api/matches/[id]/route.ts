@@ -3,6 +3,7 @@ import { requireUserId } from "@/lib/api-auth";
 import { deleteCloudinaryImages } from "@/lib/cloudinary";
 import { prisma } from "@/lib/prisma";
 import { dismissSightingsForPost } from "@/lib/sightings";
+import { sendPushToUser } from "@/lib/push-server";
 
 export async function PATCH(
   request: Request,
@@ -68,6 +69,20 @@ export async function PATCH(
         },
       ],
     });
+    await Promise.all([
+      sendPushToUser(match.foundPost.userId, {
+        title: "¡Match confirmado!",
+        body: "Ya pueden coordinar un punto de encuentro.",
+        url: "/match/encuentro",
+        tag: `match-confirmed-${id}`,
+      }),
+      sendPushToUser(match.lostPost.userId, {
+        title: "Match confirmado",
+        body: "Elegí cómo reunirte con la otra persona.",
+        url: "/match/encuentro",
+        tag: `match-confirmed-${id}`,
+      }),
+    ]);
     return Response.json({ ok: true });
   }
 
@@ -93,6 +108,12 @@ export async function PATCH(
         body: "La persona indicó que no era su mascota.",
         matchId: id,
       },
+    });
+    await sendPushToUser(match.initiatorId, {
+      title: "No era la mascota",
+      body: "La persona revisó la coincidencia y la descartó.",
+      url: "/notificaciones",
+      tag: `match-rejected-${id}`,
     });
     return Response.json({ ok: true });
   }
@@ -158,6 +179,20 @@ export async function PATCH(
         },
       ],
     });
+    await Promise.all([
+      sendPushToUser(match.lostPost.userId, {
+        title: "Encuentro acordado",
+        body: "Los avisos se cerraron correctamente.",
+        url: "/mis-avisos",
+        tag: `encounter-${id}`,
+      }),
+      sendPushToUser(match.foundPost.userId, {
+        title: "Encuentro acordado",
+        body: "Los avisos se cerraron correctamente.",
+        url: "/mis-avisos",
+        tag: `encounter-${id}`,
+      }),
+    ]);
 
     return Response.json({ ok: true });
   }

@@ -2,6 +2,7 @@ import { SightingStatus } from "@prisma/client";
 import { requireUserId } from "@/lib/api-auth";
 import { deleteCloudinaryImages } from "@/lib/cloudinary";
 import { prisma } from "@/lib/prisma";
+import { sendPushToUser } from "@/lib/push-server";
 
 export async function PATCH(
   request: Request,
@@ -73,6 +74,15 @@ export async function PATCH(
           { status: 409 },
         );
       }
+    }
+
+    if (transitioned) {
+      await sendPushToUser(sighting.reporterId, {
+        title: "El dueño quiere hablarte",
+        body: `Quien busca a ${sighting.lostPost.name} pidió tu contacto.`,
+        url: "/mis-avisos",
+        tag: `sighting-contact-${id}`,
+      });
     }
 
     return Response.json({

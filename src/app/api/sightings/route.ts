@@ -1,6 +1,7 @@
 import { PetKind, ReportStatus } from "@prisma/client";
 import { requireUserId } from "@/lib/api-auth";
 import { prisma } from "@/lib/prisma";
+import { sendPushToUser } from "@/lib/push-server";
 
 export async function POST(request: Request) {
   const authResult = await requireUserId();
@@ -102,6 +103,12 @@ export async function POST(request: Request) {
       sightingId: sighting.id,
       postId: lostPostId,
     },
+  });
+  await sendPushToUser(lostPost.userId, {
+    title: `Avistamiento de ${lostPost.name}`,
+    body: `${reporterLabel} cree haberlo visto en ${locationLabel}.`,
+    url: "/match",
+    tag: `sighting-${sighting.id}`,
   });
 
   return Response.json({ ok: true, sightingId: sighting.id });

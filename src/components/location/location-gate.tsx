@@ -3,37 +3,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2, LocateFixed, MapPinCheck, MapPinOff, PawPrint } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { ARGENTINA_CITIES, nearestCity } from "@/lib/argentina-cities";
 import {
-  clearBrowserLocation,
   readBrowserLocation,
   storeBrowserLocation,
 } from "@/lib/browser-location";
-
-const LOCATION_ENABLED_KEY = "pawfinder:location-enabled";
-
-function rememberLocationEnabled() {
-  try {
-    localStorage.setItem(LOCATION_ENABLED_KEY, "true");
-  } catch {
-    // Private browsing may restrict persistent storage; permission still works.
-  }
-}
-
-function forgetLocationEnabled() {
-  try {
-    localStorage.removeItem(LOCATION_ENABLED_KEY);
-  } catch {
-    // Nothing to clear when storage is unavailable.
-  }
-}
-
-function wasLocationEnabled() {
-  try {
-    return localStorage.getItem(LOCATION_ENABLED_KEY) === "true";
-  } catch {
-    return false;
-  }
-}
 
 type LocationGateStatus =
   | "checking"
@@ -46,6 +20,7 @@ type LocationGateStatus =
 export function LocationGate({ children }: { children: React.ReactNode }) {
   const [status, setStatus] = useState<LocationGateStatus>("checking");
   const [isIos, setIsIos] = useState(false);
+  const [cityValue, setCityValue] = useState("");
   const permissionRef = useRef<PermissionStatus | null>(null);
 
   const requestLocation = useCallback(() => {
@@ -57,19 +32,18 @@ export function LocationGate({ children }: { children: React.ReactNode }) {
     setStatus("requesting");
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        rememberLocationEnabled();
+        const city = nearestCity(position.coords.latitude, position.coords.longitude);
         storeBrowserLocation({
           lat: position.coords.latitude,
           lng: position.coords.longitude,
           capturedAt: Date.now(),
+          city: `${city.name}, ${city.province}`,
+          radiusKm: 20,
+          source: "gps",
         });
         setStatus("granted");
       },
       (error) => {
-        if (error.code === error.PERMISSION_DENIED) {
-          forgetLocationEnabled();
-          clearBrowserLocation();
-        }
         setStatus(
           error.code === error.PERMISSION_DENIED ? "denied" : "unavailable",
         );
@@ -85,7 +59,6 @@ export function LocationGate({ children }: { children: React.ReactNode }) {
       return () => window.clearTimeout(timer);
     }
 
-    const locationWasEnabled = wasLocationEnabled();
     const platformTimer = window.setTimeout(
       () => setIsIos(/iPhone|iPad|iPod/i.test(navigator.userAgent)),
       0,
@@ -107,17 +80,10 @@ export function LocationGate({ children }: { children: React.ReactNode }) {
           handlePermission();
         })
         .catch(() => {
-          timer = window.setTimeout(
-            () =>
-              locationWasEnabled ? requestLocation() : setStatus("ready"),
-            0,
-          );
+          timer = window.setTimeout(() => setStatus("ready"), 0);
         });
     } else {
-      timer = window.setTimeout(
-        () => (locationWasEnabled ? requestLocation() : setStatus("ready")),
-        0,
-      );
+      timer = window.setTimeout(() => setStatus("ready"), 0);
     }
 
     return () => {
@@ -134,6 +100,22 @@ export function LocationGate({ children }: { children: React.ReactNode }) {
   const isBusy = isChecking || isRequesting;
   const isDenied = status === "denied";
 
+  const chooseCity = () => {
+    const city = ARGENTINA_CITIES.find(
+      (candidate) => `${candidate.name}|${candidate.province}` === cityValue,
+    );
+    if (!city) return;
+    storeBrowserLocation({
+      lat: city.lat,
+      lng: city.lng,
+      capturedAt: Date.now(),
+      city: `${city.name}, ${city.province}`,
+      radiusKm: 20,
+      source: "manual",
+    });
+    setStatus("granted");
+  };
+
   return (
     <main className="pf-atmosphere flex min-h-dvh items-center justify-center px-5 py-8">
       <section className="w-full max-w-md text-center" aria-live="polite">
@@ -146,7 +128,7 @@ export function LocationGate({ children }: { children: React.ReactNode }) {
         </h1>
         <p className="mx-auto mt-3 max-w-sm text-sm leading-relaxed text-muted-foreground">
           La usamos para mostrar mascotas y puntos de encuentro cercanos a tu
-          ciudad. Es necesaria para continuar.
+          ciudad. Podés usar el GPS o elegirla manualmente.
         </p>
 
         <div className="pf-surface mt-7 rounded-2xl p-5 text-left">
@@ -205,6 +187,28 @@ export function LocationGate({ children }: { children: React.ReactNode }) {
               ? "Permitir ubicación"
               : "Volver a intentar"}
         </Button>
+
+        <div className="my-5 flex items-center gap-3 text-xs text-muted-foreground">
+          <span className="h-px flex-1 bg-border" />o<span className="h-px flex-1 bg-border" />
+        </div>
+        <div className="flex gap-2">
+          <select
+            value={cityValue}
+            onChange={(event) => setCityValue(event.target.value)}
+            className="min-h-11 min-w-0 flex-1 rounded-xl border border-input bg-background px-3 text-sm"
+            aria-label="Elegir ciudad"
+          >
+            <option value="">Elegir ciudad</option>
+            {ARGENTINA_CITIES.map((city) => (
+              <option key={`${city.name}-${city.province}`} value={`${city.name}|${city.province}`}>
+                {city.name}, {city.province}
+              </option>
+            ))}
+          </select>
+          <Button type="button" variant="outline" onClick={chooseCity} disabled={!cityValue}>
+            Continuar
+          </Button>
+        </div>
       </section>
     </main>
   );

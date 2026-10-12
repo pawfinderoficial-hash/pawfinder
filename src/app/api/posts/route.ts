@@ -2,6 +2,7 @@ import { MatchStatus, PetKind, ReportStatus } from "@prisma/client";
 import { requireUserId } from "@/lib/api-auth";
 import { toPetPost } from "@/lib/db-mappers";
 import { prisma } from "@/lib/prisma";
+import { sendPushToUser } from "@/lib/push-server";
 
 class LinkedPostError extends Error {
   constructor(
@@ -58,7 +59,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { post, matchId } = await prisma.$transaction(async (tx) => {
+    const { post, matchId, pushUserId } = await prisma.$transaction(async (tx) => {
       const linkedLostPost =
         kind === PetKind.FOUND && targetLostPostId
           ? await tx.petPost.findUnique({ where: { id: targetLostPostId } })
@@ -91,6 +92,11 @@ export async function POST(request: Request) {
             (kind === PetKind.FOUND ? "Sin nombre" : "Mascota"),
           species: body.species,
           breed: body.breed || null,
+          color: body.color?.trim() || null,
+          size: body.size?.trim() || null,
+          sex: body.sex?.trim() || null,
+          ageLabel: body.ageLabel?.trim() || null,
+          collar: body.collar?.trim() || null,
           description: body.description,
           locationLabel: body.locationLabel,
           lat: body.lat,
@@ -106,7 +112,7 @@ export async function POST(request: Request) {
         },
       });
 
-      if (!linkedLostPost) return { post, matchId: undefined };
+      if (!linkedLostPost) return { post, matchId: undefined, pushUserId: undefined };
 
       const sessionUser = await tx.user.findUnique({ where: { id: userId } });
       const finderName = sessionUser?.name || body.contactName || "Vecino/a";
@@ -132,8 +138,17 @@ export async function POST(request: Request) {
         },
       });
 
-      return { post, matchId: match.id };
+      return { post, matchId: match.id, pushUserId: linkedLostPost.userId };
     });
+
+    if (matchId && pushUserId) {
+      await sendPushToUser(pushUserId, {
+        title: "Publicaron un posible hallazgo",
+        body: "Hay una publicación vinculada a tu aviso. Revisá si coincide.",
+        url: "/match",
+        tag: `match-${matchId}`,
+      });
+    }
 
     return Response.json({
       post: toPetPost(post, { includeContact: true }),

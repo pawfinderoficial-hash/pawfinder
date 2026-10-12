@@ -25,6 +25,9 @@ import type {
 } from "@/types/pet";
 import type { FeedViewMode } from "@/components/feed/feed-view-toggle";
 import { PuedeSerChoiceSheet } from "@/components/feed/puede-ser-choice-sheet";
+import { useLocationPreference } from "@/hooks/use-location-preference";
+import { isWithinLocationRadius } from "@/lib/location-distance";
+import type { BrowserLocation } from "@/lib/browser-location";
 
 export type EncounterResult =
   | { mode: "home" }
@@ -40,6 +43,7 @@ interface PawFinderContextValue {
   refreshAll: () => Promise<void>;
   feedStack: PetPost[];
   allPosts: PetPost[];
+  location: BrowserLocation | null;
   swipeCard: (direction: "left" | "right", postId: string) => void;
   resetFeed: () => void;
   publishPost: (draft: PublishPayload) => Promise<void>;
@@ -87,8 +91,17 @@ export function PawFinderProvider({ children }: { children: ReactNode }) {
   const { data: session, status } = useSession();
   const userName = session?.user?.name ?? session?.user?.email ?? null;
 
-  const [allPosts, setAllPosts] = useState<PetPost[]>([]);
+  const [rawPosts, setRawPosts] = useState<PetPost[]>([]);
   const [feedStack, setFeedStack] = useState<PetPost[]>([]);
+  const { location } = useLocationPreference();
+  const allPosts = useMemo(
+    () => rawPosts.filter((post) => isWithinLocationRadius(post, location)),
+    [rawPosts, location],
+  );
+  const visibleFeedStack = useMemo(
+    () => feedStack.filter((post) => isWithinLocationRadius(post, location)),
+    [feedStack, location],
+  );
   const [ownedReports, setOwnedReports] = useState<OwnedReport[]>([]);
   const [ownedSightings, setOwnedSightings] = useState<OwnedSighting[]>([]);
   const [pendingMatch, setPendingMatch] = useState<PendingMatch | null>(null);
@@ -151,7 +164,7 @@ export function PawFinderProvider({ children }: { children: ReactNode }) {
             "/api/sightings/pending",
           ),
         ]);
-      setAllPosts(postsRes.posts);
+      setRawPosts(postsRes.posts);
       setFeedStack(postsRes.posts);
       setOwnedReports(mineRes.reports);
       setOwnedSightings(ownSightingsRes.sightings);
@@ -170,7 +183,7 @@ export function PawFinderProvider({ children }: { children: ReactNode }) {
         void refreshAll();
       }
       if (status === "unauthenticated") {
-        setAllPosts([]);
+        setRawPosts([]);
         setFeedStack([]);
         setOwnedReports([]);
         setOwnedSightings([]);
@@ -222,8 +235,8 @@ export function PawFinderProvider({ children }: { children: ReactNode }) {
   );
 
   const resetFeed = useCallback(() => {
-    setFeedStack(allPosts);
-  }, [allPosts]);
+    setFeedStack(rawPosts);
+  }, [rawPosts]);
 
   const publishPost = useCallback(
     async (draft: PublishPayload) => {
@@ -418,8 +431,9 @@ export function PawFinderProvider({ children }: { children: ReactNode }) {
       setFeedViewMode,
       feedSearchQuery,
       setFeedSearchQuery,
-      feedStack,
+      feedStack: visibleFeedStack,
       allPosts,
+      location,
       swipeCard,
       resetFeed,
       publishPost,
@@ -454,8 +468,9 @@ export function PawFinderProvider({ children }: { children: ReactNode }) {
       refreshAll,
       feedViewMode,
       feedSearchQuery,
-      feedStack,
+      visibleFeedStack,
       allPosts,
+      location,
       swipeCard,
       resetFeed,
       publishPost,

@@ -30,6 +30,7 @@ export function PetPostCard({
   onReport,
 }: PetPostCardProps) {
   const speciesLine = [post.species, post.breed].filter(Boolean).join(" · ");
+  const details = [post.sex, post.size, post.color, post.ageLabel, post.collar].filter(Boolean);
 
   return (
     <div
@@ -71,6 +72,15 @@ export function PetPostCard({
           >
             {speciesLine}
           </p>
+        ) : null}
+        {details.length > 0 ? (
+          <div className="flex flex-wrap gap-1.5">
+            {details.map((detail) => (
+              <span key={detail} className="rounded-full bg-muted px-2 py-1 text-[0.7rem] font-medium text-foreground/80">
+                {detail}
+              </span>
+            ))}
+          </div>
         ) : null}
         <p
           className={cn(
