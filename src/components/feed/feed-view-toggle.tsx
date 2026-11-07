@@ -21,7 +21,7 @@ export function FeedViewToggle({
   return (
     <div
       className={cn(
-        "flex rounded-2xl border border-border/60 bg-card/80 p-1 shadow-sm backdrop-blur-sm",
+        "flex rounded-xl border border-border bg-muted p-1 shadow-sm",
         className,
       )}
       role="tablist"
@@ -37,9 +37,9 @@ export function FeedViewToggle({
             aria-selected={active}
             onClick={() => onChange(opt.value)}
             className={cn(
-              "flex-1 rounded-xl px-4 py-2 text-sm font-medium transition-colors",
+              "flex-1 rounded-lg px-4 py-2.5 font-heading text-sm font-semibold transition-colors",
               active
-                ? "bg-primary/12 text-[var(--action-like-fg)] shadow-sm"
+                ? "bg-primary text-primary-foreground shadow-sm"
                 : "text-muted-foreground hover:text-foreground",
             )}
           >

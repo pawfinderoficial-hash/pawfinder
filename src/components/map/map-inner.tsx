@@ -215,8 +215,8 @@ export function PetMapInner({
             center={[userCenter.lat, userCenter.lng]}
             radius={8}
             pathOptions={{
-              color: "#ffffff",
-              fillColor: "#2563eb",
+              color: "#2b2b2a",
+              fillColor: "#feb125",
               fillOpacity: 1,
               weight: 3,
             }}

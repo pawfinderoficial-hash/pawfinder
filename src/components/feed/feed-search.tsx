@@ -33,7 +33,7 @@ export function FeedSearch({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder="Buscar por raza, nombre, zona…"
-          className="h-11 rounded-2xl border-border/60 bg-card/90 pl-10 shadow-sm"
+          className="h-11 rounded-lg border-border bg-card pl-10 shadow-sm"
           aria-label="Buscar avisos"
         />
       </div>

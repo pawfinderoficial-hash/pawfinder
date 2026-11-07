@@ -35,7 +35,7 @@ export function PetPostCard({
   return (
     <div
       className={cn(
-        "pf-surface flex flex-col overflow-hidden rounded-[1.35rem]",
+        "pf-surface flex flex-col overflow-hidden rounded-xl",
         className,
       )}
     >
@@ -57,7 +57,7 @@ export function PetPostCard({
       <div className={cn(compact ? "space-y-1.5 px-4 py-3" : "space-y-3 px-5 py-5")}>
         <h2
           className={cn(
-            "pf-heading-card font-heading font-semibold",
+            "pf-heading-card font-accent font-semibold",
             compact && "text-xl",
           )}
         >

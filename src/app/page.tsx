@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { PawPrint, Heart, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { BrandWordmark } from "@/components/layout/brand-wordmark";
 
 function GoogleMark({ className }: { className?: string }) {
   return (
@@ -54,30 +55,30 @@ export default function HomePage() {
 
   return (
     <div className="pf-atmosphere flex min-h-full flex-col">
-      <div className="mx-auto flex w-full max-w-md flex-1 flex-col px-4 py-8 md:max-w-lg md:py-12">
-        <div className="mb-8 text-center">
+      <div className="mx-auto flex w-full max-w-md flex-1 flex-col justify-center px-5 py-8 md:max-w-lg md:py-12">
+        <div className="mb-7 text-center">
           <div
-            className="mx-auto mb-4 flex size-[4.25rem] items-center justify-center rounded-[1.25rem] bg-primary text-primary-foreground shadow-md"
+            className="mx-auto mb-5 flex size-24 items-center justify-center rounded-2xl bg-primary text-primary-foreground"
             aria-hidden
           >
-            <PawPrint className="size-9" strokeWidth={2.25} />
+            <PawPrint className="size-12" strokeWidth={1.8} />
           </div>
-          <h1 className="pf-heading-brand font-heading font-semibold text-foreground">
-            PawFinder
-          </h1>
-          <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-            Reuní mascotas perdidas con quienes las encontraron. Hecho con cariño
-            para tu barrio.
+          <h1><BrandWordmark className="text-4xl" /></h1>
+          <p className="mt-3 font-accent text-xl text-foreground">
+            Cada huella te acerca.
+          </p>
+          <p className="mx-auto mt-3 max-w-sm text-sm leading-relaxed text-muted-foreground">
+            Reunimos mascotas perdidas con las personas que pueden ayudarlas a volver a casa.
           </p>
         </div>
 
-        <Card className="pf-surface-soft border border-border/40 shadow-none">
+        <Card className="border border-border bg-card shadow-sm">
           <CardContent className="space-y-4 pt-6">
             <Button
               type="button"
               variant="outline"
               size="lg"
-              className="h-12 w-full gap-3 rounded-xl border-border/80 bg-white text-[0.95rem] font-semibold text-foreground shadow-sm hover:bg-white/95 dark:bg-card"
+              className="h-12 w-full gap-3 rounded-lg border-border bg-white text-[0.95rem] font-semibold text-foreground shadow-sm hover:bg-muted dark:bg-card"
               onClick={() => void continueWithGoogle()}
               disabled={loading}
             >
@@ -90,14 +91,14 @@ export default function HomePage() {
           </CardContent>
         </Card>
 
-        <ul className="mt-8 space-y-3 text-sm text-muted-foreground">
+        <ul className="mt-7 space-y-3 text-sm text-muted-foreground">
           <li className="flex gap-2">
             <Heart className="size-4 shrink-0 text-primary" />
-            Deslizá publicaciones de mascotas perdidas y encontradas
+            Encontrá avisos cercanos y ayudá a reconocer mascotas.
           </li>
           <li className="flex gap-2">
             <Shield className="size-4 shrink-0 text-primary" />
-            Fotos en Cloudinary, datos en Postgres — v1 funcional
+            Tus datos de contacto permanecen protegidos hasta que decidís hablar.
           </li>
         </ul>
       </div>

@@ -18,7 +18,7 @@ export function PetKindBadge({
     <Badge
       variant="secondary"
       className={cn(
-        "border-0 px-2.5 py-0.5 text-[0.7rem] font-semibold tracking-wide shadow-sm backdrop-blur-sm",
+        "border-0 px-2.5 py-0.5 text-[0.7rem] font-semibold shadow-sm",
         kind === "lost"
           ? "bg-[var(--badge-lost-bg)] text-[var(--badge-lost-fg)]"
           : "bg-[var(--badge-found-bg)] text-[var(--badge-found-fg)]",

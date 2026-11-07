@@ -8,6 +8,7 @@ import {
   readBrowserLocation,
   storeBrowserLocation,
 } from "@/lib/browser-location";
+import { BrandWordmark } from "@/components/layout/brand-wordmark";
 
 type LocationGateStatus =
   | "checking"
@@ -124,10 +125,10 @@ export function LocationGate({ children }: { children: React.ReactNode }) {
   return (
     <main className="pf-atmosphere flex min-h-dvh items-center justify-center px-5 py-8">
       <section className="w-full max-w-md text-center" aria-live="polite">
-        <div className="mx-auto mb-6 flex size-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+        <div className="mx-auto mb-5 flex size-14 items-center justify-center rounded-xl bg-primary text-primary-foreground">
           <PawPrint className="size-7" strokeWidth={2.25} />
         </div>
-        <p className="mb-2 text-sm font-semibold text-primary">PawFinder</p>
+        <BrandWordmark className="mb-3 text-2xl" />
         <h1 className="font-heading text-2xl font-semibold text-foreground">
           Necesitamos tu ubicación
         </h1>
@@ -136,7 +137,7 @@ export function LocationGate({ children }: { children: React.ReactNode }) {
           ciudad. Podés usar el GPS o elegirla manualmente.
         </p>
 
-        <div className="pf-surface mt-7 rounded-2xl p-5 text-left">
+        <div className="pf-surface mt-7 rounded-xl p-5 text-left">
           <div className="flex gap-3">
             <div className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary">
               {isBusy ? (

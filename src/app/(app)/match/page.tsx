@@ -93,7 +93,7 @@ function SightingCard({
           </div>
         )}
         <div className="min-w-0 flex-1">
-          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          <p className="text-xs font-medium uppercase text-muted-foreground">
             Avistamiento · {sighting.lostPost.name}
           </p>
           <p className="mt-0.5 font-heading text-base font-semibold">
@@ -126,7 +126,7 @@ function SightingCard({
 
       <div className="grid grid-cols-[1fr_3.25rem] gap-2">
         <Button
-          className="pf-btn-emphasis min-h-12 rounded-xl shadow-none"
+          className="pf-btn-whatsapp min-h-12 rounded-lg shadow-none"
           disabled={busy}
           onClick={() => void openWhatsApp()}
         >

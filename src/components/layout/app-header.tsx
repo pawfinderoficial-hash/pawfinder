@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Bell, PawPrint } from "lucide-react";
 import { usePawFinder } from "@/context/pawfinder-context";
+import { BrandWordmark } from "@/components/layout/brand-wordmark";
 
 interface AppHeaderProps {
   title: string;
@@ -16,24 +17,30 @@ export function AppHeader({
   const { userName, unreadNotificationCount } = usePawFinder();
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border/40 bg-background/80 backdrop-blur-xl">
-      <div className="mx-auto flex h-14 max-w-lg items-center justify-between gap-2 px-4 md:max-w-2xl">
+    <header className="sticky top-0 z-40 border-b border-border bg-card/96 backdrop-blur-xl">
+      <div className="mx-auto flex h-16 w-full max-w-lg items-center justify-between gap-2 px-4 md:max-w-2xl">
         <div className="flex min-w-0 flex-1 items-center gap-2.5">
-          <div
-            className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-primary"
-            aria-hidden
-          >
-            <PawPrint className="size-5" strokeWidth={2.25} />
-          </div>
-          <h1 className="truncate font-heading text-lg font-semibold leading-tight text-foreground">
-            {title}
-          </h1>
+          {title === "PawFinder" ? (
+            <BrandWordmark className="text-xl" />
+          ) : (
+            <>
+              <div
+                className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground"
+                aria-hidden
+              >
+                <PawPrint className="size-5" strokeWidth={2.25} />
+              </div>
+              <h1 className="truncate font-heading text-base font-semibold leading-tight text-foreground">
+                {title}
+              </h1>
+            </>
+          )}
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
           {showNotificationBell ? (
             <Link
               href="/notificaciones"
-              className="relative flex size-9 items-center justify-center rounded-xl border border-border/50 bg-card/90 text-foreground/80 shadow-sm transition-colors hover:bg-muted/50"
+              className="relative flex size-10 items-center justify-center rounded-lg border border-border bg-card text-foreground transition-colors hover:bg-muted"
               aria-label={
                 unreadNotificationCount > 0
                   ? `Notificaciones, ${unreadNotificationCount} sin leer`
@@ -51,7 +58,11 @@ export function AppHeader({
             </Link>
           ) : null}
           {userName ? (
-            <span className="max-w-24 truncate rounded-full border border-border/50 bg-card/90 px-2.5 py-1.5 text-xs font-medium text-foreground/80 shadow-sm">
+            <span
+              className="max-w-24 truncate rounded-full bg-primary px-3 py-2 font-heading text-xs font-semibold text-primary-foreground"
+              title={`Hola, ${userName.split(" ")[0]}`}
+              aria-label={`Usuario: ${userName}`}
+            >
               Hola, {userName.split(" ")[0]}
             </span>
           ) : null}

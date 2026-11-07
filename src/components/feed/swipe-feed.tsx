@@ -68,13 +68,13 @@ const SwipeCard = forwardRef<
   const swipeOverlays = (
     <>
       <motion.div
-        className="absolute left-5 top-[38%] rounded-xl bg-background/90 px-3 py-1.5 text-lg font-semibold tracking-wide text-destructive backdrop-blur-sm"
+        className="absolute left-5 top-[38%] rounded-lg bg-background/90 px-3 py-1.5 text-lg font-semibold text-destructive backdrop-blur-sm"
         style={{ opacity: opacitySkip }}
       >
         Pasar
       </motion.div>
       <motion.div
-        className="absolute right-5 top-[38%] rounded-xl bg-background/90 px-3 py-1.5 text-lg font-semibold tracking-wide text-primary backdrop-blur-sm"
+        className="absolute right-5 top-[38%] rounded-lg bg-background/90 px-3 py-1.5 text-lg font-semibold text-foreground backdrop-blur-sm"
         style={{ opacity: opacityLike }}
       >
         Puede ser

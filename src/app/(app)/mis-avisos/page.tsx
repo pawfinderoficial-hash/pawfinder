@@ -42,7 +42,7 @@ const sightingStatus: Record<
   },
   contact_shared: {
     label: "Te van a contactar",
-    className: "bg-emerald-100 text-emerald-800",
+    className: "bg-found/15 text-found-foreground",
     nextStep: "La familia ya recibió tu teléfono. Revisá tus llamadas y WhatsApp.",
   },
   dismissed: {

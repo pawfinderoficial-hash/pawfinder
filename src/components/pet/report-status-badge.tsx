@@ -8,19 +8,19 @@ const statusMeta: Record<
 > = {
   active: {
     label: "Activo",
-    className: "border-emerald-200 bg-emerald-50 text-emerald-800",
+    className: "border-primary bg-accent text-foreground",
   },
   reviewing: {
     label: "En revision",
-    className: "border-sky-200 bg-sky-50 text-sky-800",
+    className: "border-[var(--badge-seen-fg)]/25 bg-[var(--badge-seen-bg)] text-[var(--badge-seen-fg)]",
   },
   paused: {
     label: "Pausado",
-    className: "border-amber-200 bg-amber-50 text-amber-800",
+    className: "border-border bg-muted text-muted-foreground",
   },
   resolved: {
     label: "Resuelto",
-    className: "border-border bg-muted text-muted-foreground",
+    className: "border-[var(--badge-found-fg)]/25 bg-[var(--badge-found-bg)] text-[var(--badge-found-fg)]",
   },
 };
 

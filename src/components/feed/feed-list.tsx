@@ -32,7 +32,7 @@ function FeedListRow({
     <button
       type="button"
       onClick={onSelect}
-      className="flex w-full gap-3 rounded-2xl border border-border/50 bg-card/90 p-3 text-left shadow-sm transition-colors hover:border-primary/20 hover:bg-card"
+      className="flex w-full gap-3 rounded-xl border border-border bg-card p-3 text-left shadow-sm transition-colors hover:border-primary hover:bg-card"
     >
       <div className="relative size-[4.5rem] shrink-0 overflow-hidden rounded-xl bg-muted">
         <Image
@@ -45,7 +45,7 @@ function FeedListRow({
       </div>
       <div className="min-w-0 flex-1 space-y-1.5 py-0.5">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="font-heading text-base font-semibold text-foreground">
+          <span className="font-accent text-lg font-semibold text-foreground">
             {post.name}
           </span>
           <PetKindBadge kind={post.kind} className="scale-95" />
@@ -142,7 +142,7 @@ export function FeedList() {
   return (
     <>
       {reportSent ? (
-        <div className="mx-4 mt-3 rounded-xl border border-primary/15 bg-primary/10 px-3 py-2 text-sm" role="status">
+        <div className="mx-4 mt-3 rounded-lg border border-primary bg-accent px-3 py-2 text-sm" role="status">
           Recibimos el reporte. El equipo de moderacion lo revisara.
         </div>
       ) : null}
