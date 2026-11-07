@@ -207,10 +207,7 @@ export default function MatchPage() {
 
             <div className="flex gap-2 rounded-2xl border border-border/50 bg-muted/40 p-3 text-sm text-muted-foreground">
               <LockKeyhole className="mt-0.5 size-4 shrink-0 text-primary" />
-              <p>
-                El telefono se habilita despues de confirmar la coincidencia. No se
-                muestra contacto personal en publicaciones publicas.
-              </p>
+              <p>El contacto se habilita al confirmar.</p>
             </div>
 
             <p className="text-center text-sm text-muted-foreground">
