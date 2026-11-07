@@ -203,10 +203,6 @@ export default function MatchPage() {
       <div className="space-y-6 px-4 py-4">
         {hasMatch ? (
           <section className="space-y-5">
-            <div className="rounded-2xl border border-primary/15 bg-primary/10 p-4 text-sm leading-relaxed text-foreground/90">
-              {pendingMatch!.message}
-            </div>
-
             <PetPostCard post={pendingMatch!.foundPost} priority />
 
             <div className="flex gap-2 rounded-2xl border border-border/50 bg-muted/40 p-3 text-sm text-muted-foreground">
