@@ -124,9 +124,9 @@ function SightingCard({
         </p>
       ) : null}
 
-      <div className="grid grid-cols-[1fr_3.25rem] gap-2">
+      <div className="grid grid-cols-[minmax(0,1fr)_3rem] gap-2">
         <Button
-          className="pf-btn-whatsapp min-h-12 rounded-lg shadow-none"
+          className="pf-btn-whatsapp h-12 min-w-0 rounded-lg shadow-none"
           disabled={busy}
           onClick={() => void openWhatsApp()}
         >
@@ -137,7 +137,7 @@ function SightingCard({
           type="button"
           variant="outline"
           size="icon"
-          className="size-[3.25rem] rounded-xl text-destructive hover:bg-destructive/10 hover:text-destructive"
+          className="size-12 rounded-lg text-destructive hover:bg-destructive/10 hover:text-destructive"
           disabled={busy}
           onClick={() => void runAction(onDismiss)}
           aria-label="Descartar avistamiento"
@@ -221,22 +221,24 @@ export default function MatchPage() {
               ¿Es tu mascota? Confirmá solo si estás seguro/a.
             </p>
 
-            <div className="flex flex-col gap-3 sm:flex-row">
+            <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-3">
               <Button
                 size="lg"
-                className="pf-btn-emphasis flex-1 rounded-xl shadow-none"
+                className="pf-btn-emphasis min-w-0 rounded-lg px-3 shadow-none sm:flex-1 sm:px-4"
                 onClick={handleConfirm}
               >
-                <PartyPopper className="size-5" />
-                Confirmar — ¡es mi mascota!
+                <PartyPopper className="hidden size-5 min-[380px]:block" />
+                <span className="sm:hidden">Sí, es mi mascota</span>
+                <span className="hidden sm:inline">Confirmar — ¡es mi mascota!</span>
               </Button>
               <Button
                 size="lg"
                 variant="outline"
-                className="flex-1"
+                className="min-w-0 rounded-lg px-3 sm:flex-1 sm:px-4"
                 onClick={rejectMatch}
               >
-                Rechazar
+                <span className="sm:hidden">No coincide</span>
+                <span className="hidden sm:inline">Rechazar</span>
               </Button>
             </div>
           </section>
