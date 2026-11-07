@@ -176,7 +176,7 @@ export function SwipeFeed() {
   return (
     <div className="px-4 py-3">
       <div
-        className="relative mx-auto h-[clamp(19rem,calc(100dvh-22rem),39rem)] w-full max-w-md"
+        className="relative mx-auto h-[clamp(22rem,calc(100dvh-27rem),27rem)] w-full max-w-md"
       >
         {next ? (
           <motion.div

@@ -25,7 +25,7 @@ export function SwipeActions({ onPass, onLike, className }: SwipeActionsProps) {
         whileTap={{ scale: 0.98 }}
         transition={tapSpring}
         onClick={onPass}
-        className="pf-action-pass flex h-[3.25rem] flex-1 items-center justify-center gap-2.5 rounded-2xl px-4 text-[0.9375rem] font-medium"
+        className="pf-action-pass flex h-12 flex-1 items-center justify-center gap-2.5 rounded-lg px-4 text-[0.9375rem] font-medium"
         aria-label="Pasar"
       >
         <X
@@ -41,7 +41,7 @@ export function SwipeActions({ onPass, onLike, className }: SwipeActionsProps) {
         whileTap={{ scale: 0.98 }}
         transition={tapSpring}
         onClick={onLike}
-        className="pf-action-like flex h-[3.25rem] flex-1 items-center justify-center gap-2.5 rounded-2xl px-4 text-[0.9375rem] font-medium"
+        className="pf-action-like flex h-12 flex-1 items-center justify-center gap-2.5 rounded-lg px-4 text-[0.9375rem] font-medium"
         aria-label="Puede ser"
       >
         <Heart
