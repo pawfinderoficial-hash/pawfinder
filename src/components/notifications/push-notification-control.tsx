@@ -25,8 +25,7 @@ export function PushNotificationControl() {
       const timer = window.setTimeout(() => setState("denied"), 0);
       return () => window.clearTimeout(timer);
     }
-    void navigator.serviceWorker
-      .register("/sw.js")
+    void navigator.serviceWorker.ready
       .then((registration) => registration.pushManager.getSubscription())
       .then((subscription) => setState(subscription ? "on" : "off"))
       .catch(() => setState("unsupported"));

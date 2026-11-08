@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { DM_Sans, Fraunces, Poppins } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/providers";
+import { ServiceWorkerRegister } from "@/components/pwa/ServiceWorkerRegister";
 
 const fraunces = Fraunces({
   variable: "--font-fraunces",
@@ -37,6 +38,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${poppins.variable} ${dmSans.variable} ${fraunces.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-sans">
+        <ServiceWorkerRegister />
         <Providers>{children}</Providers>
       </body>
     </html>
